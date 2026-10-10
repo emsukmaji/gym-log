@@ -129,6 +129,7 @@ button{font:inherit;color:inherit}
 .dot{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:none;cursor:pointer;font-family:var(--display);font-size:20px;font-weight:700;color:var(--muted)}
 .dot[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
 .prep{border-style:dashed}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);text-align:left;cursor:pointer;font:inherit;text-decoration:underline;text-underline-offset:3px}
 .plan td:last-child{text-align:left;white-space:normal;padding-left:12px}
 .plan td:first-child{vertical-align:top;width:52px}
 .sleep summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer}
@@ -567,6 +568,22 @@ function prepCard(type,w){
 }
 function renderToday(){
   const dow=new Date().getDay(),today=WDAY[dow];
+  if(profile&&profile.start&&profile.start>dateKey()){
+    const days=Math.round((new Date(profile.start+"T12:00:00")-new Date(dateKey()+"T12:00:00"))/864e5);
+    const sd=new Date(profile.start+"T12:00:00"),first=WDAY[sd.getDay()];
+    const full=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+    $("#view").innerHTML=backupBanner()+`<div class="hero"><div><div class="label">${esc(todayStr())}</div><div class="big">${days} hari lagi</div><div class="hint">Mulai gym ${esc(full[sd.getDay()])}, ${esc(fmtDate(profile.start))}${first?` · hari pertama <b>${esc(WL[first])}</b>`:""}</div></div></div>
+    <div class="rules">
+    <section><h2>Persiapan sebelum mulai</h2><ul>
+    <li><b>Lanjutkan workout di kos</b> seperti biasa supaya badan tetap terbiasa bergerak.</li>
+    <li><b>Latih jam tidur dari sekarang:</b> tidur sekitar jam 21.15 dan bangun Subuh, supaya hari pertama tidak kaget.</li>
+    <li><b>Coba menu di tab Harian</b> dan centang kebiasaan harian. Pola makan bisa mulai duluan.</li>
+    <li><b>Pelajari gerakan</b> di tab Program: ketuk nama gerakan untuk melihat animasi dan video contohnya, terutama squat, Romanian deadlift, dan incline press.</li>
+    <li><b>Cek ke dokter dulu</b> kalau punya keluhan di kaki, sendi, atau jantung, sebelum mulai latihan berat.</li>
+    <li><b>Sehari sebelum mulai:</b> ambil foto awal, lalu catat berat dan ukuran pertama di tab Target.</li></ul></section>
+    <section><h2>Minggu pertama nanti</h2><p>Pakai beban ringan dan fokus teknik. Minta staf gym mengecek squat dan Romanian deadlift di hari Leg day.</p></section></div>`;
+    return;
+  }
   const weekStrip=`<div class="week">${[1,2,3,4,5,6,0].map(i=>`<div class="${TRAIN_DAYS.includes(i)?"train":""} ${i===dow?"today":""}">${DAYS[i]}</div>`).join("")}</div>`;
   if(!today){
     let n=1;while(!WDAY[(dow+n)%7])n++;const nd=(dow+n)%7;
@@ -577,7 +594,7 @@ function renderToday(){
   }
   if(!draft||draft.workout!==today){draft=loadDraft()||newDraft(today);}
   const w=draft.workout;
-  let h=backupBanner()+`<div class="hero"><div><div class="label">${esc(todayStr())}</div><div class="big">${esc(WL[w]||w)}</div><div class="hint">${esc(WSUB[w]||"")}</div></div></div>
+  let h=backupBanner()+`<div class="hero"><div><div class="label">${esc(todayStr())}</div><div class="big">${esc(WL[w]||w)}</div>${profile&&profile.start&&profile.start<=dateKey()?`<div class="label" style="margin-top:4px">Minggu ke-${Math.floor((new Date(dateKey()+"T12:00:00")-new Date(profile.start+"T12:00:00"))/864e5/7)+1}</div>`:""}<div class="hint">${esc(WSUB[w]||"")}</div></div></div>
   ${weekStrip}`;
   h+=`<div class="notice">Ketuk gambar untuk lihat cara gerakan. Isi beban kalau mau dicatat, lalu ketuk nomor set setiap kali satu set selesai.</div>`;
   if(PROGRAM[w].some(e=>e.lower))h+=`<div class="notice safe-card"><b>Keamanan kaki hari ini</b><br>Pakai stocking kompresi saat latihan kalau punya. Berhenti dan periksa ke dokter hari itu juga kalau satu betis tiba-tiba bengkak, nyeri, terasa panas, atau kemerahan.</div>`;
@@ -689,7 +706,7 @@ function renderProgram(){
     const kind={leg:"kaki",mix:"lengan dan kaki",upper:"badan atas"}[prepKind(k)];
     return `<section${now}><h2>${full[d]} · ${esc(WL[k])}</h2><p class="hint">${esc(WSUB[k])}${d===dow?" · <b>hari ini</b>":""}</p>
     <table class="shop"><tr><td colspan="2"><i>Pemanasan ${kind} ±10 menit</i></td></tr>
-    ${PROGRAM[k].map(e=>`<tr><td>${esc(e.name)}</td><td>${e.sets} × ${rng(e)} ${e.unit}${e.rest?`<br><small class="hint">istirahat ${restTxt(e.rest)}</small>`:""}</td></tr>`).join("")}
+    ${PROGRAM[k].map(e=>`<tr><td>${DEMO[e.id]?`<button type="button" class="linkbtn" data-demo="${e.id}">${esc(e.name)}</button>`:esc(e.name)}</td><td>${e.sets} × ${rng(e)} ${e.unit}${e.rest?`<br><small class="hint">istirahat ${restTxt(e.rest)}</small>`:""}</td></tr>`).join("")}
     <tr><td colspan="2"><i>Pendinginan ${kind} ±12 menit</i></td></tr></table></section>`};
   $("#view").innerHTML=`<div class="rules">
   <section><h2>Jadwal mingguan</h2><ul><li>Senin: Push · Selasa: Pull · Rabu: Leg day · Jumat: V-Taper · Sabtu: Arms + Legs.</li><li>Kamis dan Minggu istirahat total.</li><li>Tab Latihan otomatis membuka latihan sesuai hari dan tidak bisa diganti. Kalau bolos, lanjutkan saja jadwal hari berikutnya.</li></ul></section>
