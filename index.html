@@ -1,0 +1,1103 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
+<link rel="icon" type="image/png" href="icon-192.png?v=3">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-title" content="Gym Log">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1318">
+<style>:root{color-scheme:light;padding-bottom:env(safe-area-inset-bottom,0px);--appbar-safe:env(safe-area-inset-top,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Gym Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: single-column phone logbook — sticky tab bar, exercise cards as rows of set inputs, rest timer docked at bottom */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --ink:#151a21; --muted:#5d6774; --line:#d5dbe2;
+  --accent:#1d55c4; --accent-ink:#ffffff; --chalk:#e3e8ee; --good:#1f7a4a; --warn:#b5600b; --danger:#b4322b;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1318; --surface:#181e26; --ink:#e8edf3; --muted:#9aa5b3; --line:#2a333f;
+  --accent:#6f9cff; --accent-ink:#0b1220; --chalk:#212935; --good:#4cc488; --warn:#f0a352; --danger:#f07a70; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1318; --surface:#181e26; --ink:#e8edf3; --muted:#9aa5b3; --line:#2a333f;
+  --accent:#6f9cff; --accent-ink:#0b1220; --chalk:#212935; --good:#4cc488; --warn:#f0a352; --danger:#f07a70; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:0 120px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:.01em}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:14px 8px}
+.top h1{font-size:30px;font-weight:700;text-transform:uppercase;line-height:1}
+.top .sub{color:var(--muted);font-size:13px}
+.appbar{position:sticky;top:calc(-1 * var(--appbar-lift,0px));z-index:5;background:var(--bg);margin-inline:-16px;padding-inline:16px;padding-top:var(--appbar-safe,0px);box-shadow:0 1px 0 var(--line)}
+.appbar::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:200px;background:var(--bg)}
+.tabs{display:flex;gap:4px;padding-block:6px 10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chips span{font-size:12px;background:var(--chalk);border-radius:6px;padding:2px 8px;font-variant-numeric:tabular-nums}
+.meal-row{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.meal-row > div{min-width:0}
+.meal-time{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.eat{flex:none;border:2px solid var(--line);background:none;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:13px;color:var(--muted)}
+.eat[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
+.meter{height:10px;background:var(--chalk);border-radius:999px;overflow:hidden;margin-top:6px}
+.meter div{height:100%;background:var(--good)}
+.shop td{padding:4px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.shop{width:100%;border-collapse:collapse;font-size:14px}
+.shop td:last-child{text-align:right;white-space:nowrap}
+.tl td:last-child{white-space:normal;text-align:right;padding-left:12px}
+.tl td:first-child{white-space:nowrap;vertical-align:top}
+.shop td[colspan]{text-align:left;color:var(--muted);white-space:normal}
+.tabs button{flex:1;font-family:var(--display);font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;background:none;border:0;color:var(--muted);padding:8px 4px;border-radius:8px;cursor:pointer}
+.tabs{overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{min-width:0;flex:1 1 auto;padding-inline:4px}
+@media (max-width:389px){.tabs button{font-size:12.5px;letter-spacing:0;padding-inline:4px}}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.notice{font-size:13px;color:var(--muted);background:var(--chalk);border-radius:8px;padding:8px 12px;margin-top:12px}
+.hero{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px}
+.hero .label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.hero .big{font-family:var(--display);font-size:42px;font-weight:700;line-height:1}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.seg button{border:0;background:none;padding:6px 16px;border-radius:999px;font-family:var(--display);font-size:18px;font-weight:700;cursor:pointer;color:var(--muted)}
+.wseg{display:flex;flex-wrap:wrap;border-radius:12px;margin-top:12px;width:100%}
+.wseg button{flex:1 1 auto;font-size:15px;padding:6px 8px;border-radius:9px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px}
+.week div{text-align:center;font-size:12px;padding:6px 0;border-radius:6px;color:var(--muted);background:var(--chalk)}
+.week div.train{color:var(--ink);font-weight:700}
+.week div.today{outline:2px solid var(--accent);outline-offset:-2px}
+.list{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.ex{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.ex-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.ex-head h3{font-size:22px;font-weight:600}
+.target{font-family:var(--display);font-size:16px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hint{font-size:13px;color:var(--muted);margin-top:2px}
+.hint.up{color:var(--good);font-weight:700}
+.sets{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.set{display:grid;grid-template-columns:28px 1fr 1fr 44px;gap:8px;align-items:center}
+.set .n{font-family:var(--display);font-size:18px;color:var(--muted);text-align:center}
+.field{display:flex;align-items:center;background:var(--chalk);border-radius:8px;padding:0 8px;min-width:0}
+.field input{width:100%;min-width:0;border:0;background:none;font-family:var(--display);font-size:22px;font-weight:600;padding:6px 0;color:var(--ink);font-variant-numeric:tabular-nums}
+.field input::placeholder{color:var(--muted);opacity:.6}
+.field span{font-size:12px;color:var(--muted)}
+.tick{width:44px;height:40px;border-radius:8px;border:2px solid var(--line);background:none;cursor:pointer;font-size:20px;color:var(--muted)}
+.tick[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
+.primary{display:block;width:100%;margin-top:20px;padding:14px;border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-size:22px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;cursor:pointer}
+.primary:disabled{opacity:.5;cursor:default}
+.ghost{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px}
+.ghost.danger{color:var(--danger);border-color:var(--danger)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:20}
+.timer{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--ink);color:var(--bg);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.timer .in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.timer .t{font-family:var(--display);font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;min-width:84px}
+.timer .lbl{flex:1;font-size:13px;opacity:.8;min-width:0}
+.timer button{background:none;border:1px solid currentColor;border-radius:8px;padding:6px 10px;cursor:pointer;color:inherit;font-size:13px}
+.timer.done .t{color:var(--good)}
+.bar{height:3px;background:var(--accent);transition:width 1s linear;margin:-10px -16px 8px}
+.empty{text-align:center;color:var(--muted);padding:32px 16px;background:var(--surface);border:1px dashed var(--line);border-radius:12px;margin-top:16px}
+.sess{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.sess-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{font-family:var(--display);font-weight:700;font-size:16px;background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:0 8px}
+.sess table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+.sess td{padding:3px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.sess td:last-child{text-align:right;color:var(--muted)}
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:16px}
+.chart select{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--chalk);color:var(--ink);max-width:100%}
+.chart svg{width:100%;height:auto;display:block;margin-top:8px}
+.rules{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.rules section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.rules h2{font-size:22px;margin-bottom:6px}
+.rules ul{margin:0;padding-left:18px}
+.rules li{margin:4px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.simple{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}
+.kgbox{display:flex;align-items:center;gap:6px;background:var(--chalk);border-radius:10px;padding:4px 10px}
+.kgbox span{font-size:13px;color:var(--muted)}
+.kgbox input{width:56px;border:0;background:none;font-family:var(--display);font-size:22px;font-weight:600;color:var(--ink);text-align:center;font-variant-numeric:tabular-nums}
+.dots{display:flex;gap:8px;flex-wrap:wrap}
+.dot{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:none;cursor:pointer;font-family:var(--display);font-size:20px;font-weight:700;color:var(--muted)}
+.dot[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
+.prep{border-style:dashed}
+.plan td:last-child{text-align:left;white-space:normal;padding-left:12px}
+.plan td:first-child{vertical-align:top;width:52px}
+.sleep summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer}
+.sleep summary::-webkit-details-marker{display:none}
+.sleep summary .label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.sleep summary b{font-family:var(--display);font-size:24px}
+.sleep summary .hint{color:var(--accent)}
+.hint.safe{color:var(--warn);margin-top:4px}
+.safe-card{border-left:4px solid var(--warn)}
+.prep-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.prep-row{display:flex;gap:8px;align-items:center}
+.demo.sm{width:52px;height:52px}
+.prep-item{flex:1;min-width:0;display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:var(--chalk);border:0;border-radius:10px;padding:10px;cursor:pointer;color:var(--ink)}
+.prep-item b{display:block;font-size:15px}
+.prep-item small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.pc{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:14px;color:#fff}
+.prep-item[aria-pressed="true"] .pc{background:var(--good);border-color:var(--good)}
+.prep-item[aria-pressed="true"] b{color:var(--muted);text-decoration:line-through}
+.ex-title{display:flex;gap:10px;align-items:center;min-width:0}
+.ex-title > div{min-width:0}
+.demo{flex:none;width:60px;height:60px;padding:0;border:1px solid var(--line);border-radius:10px;background:#1c2330;cursor:pointer;overflow:hidden}
+.demo canvas{width:100%;height:100%;display:block}
+.modal{position:fixed;inset:0;z-index:30;background:color-mix(in srgb,var(--ink) 55%,transparent);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);color:var(--ink);width:100%;max-width:520px;max-height:90vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.sheet canvas{width:100%;max-width:260px;aspect-ratio:1;display:block;margin:8px auto;background:#1c2330;border-radius:12px}
+.sheet ol{margin:8px 0 0;padding-left:20px}
+.sheet li{margin:6px 0}
+.yt{display:block;text-align:center;margin-top:14px;padding:12px;border-radius:10px;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:700}
+@media (prefers-reduced-motion:reduce){.bar{transition:none}}
+</style>
+
+<div class="wrap">
+  <div class="appbar">
+  <header class="top">
+    <h1>Gym Log</h1>
+    <div class="sub" id="sync">Memuat data…</div>
+  </header>
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-hari" data-tab="hari" aria-selected="true">Latihan</button>
+    <button role="tab" id="tab-makan" data-tab="makan" aria-selected="false">Harian</button>
+    <button role="tab" id="tab-riwayat" data-tab="riwayat" aria-selected="false">Riwayat</button>
+    <button role="tab" id="tab-target" data-tab="target" aria-selected="false">Target</button>
+    <button role="tab" id="tab-program" data-tab="program" aria-selected="false">Program</button>
+  </nav>
+  </div>
+  <main id="view"></main>
+</div>
+<div class="timer" id="timer" hidden>
+  <div class="bar" id="timerBar" style="width:100%"></div>
+  <div class="in">
+    <div class="t" id="timerT">2:00</div>
+    <div class="lbl" id="timerL">Istirahat</div>
+    <button id="tMinus" type="button">−15</button>
+    <button id="tPlus" type="button">+15</button>
+    <button id="tStop" type="button">Tutup</button>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+<div class="modal" id="modal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="row" style="justify-content:space-between"><h2 id="mTitle" style="font-size:26px"></h2><button class="ghost" type="button" id="mClose">Tutup</button></div>
+  <canvas id="mCanvas" width="440" height="440"></canvas>
+  <ol id="mCues"></ol>
+  <a class="yt" id="mYt" href="#" target="_blank" rel="noopener">▶ Tonton video contoh di YouTube</a>
+</div></div>
+
+<script>
+const PROGRAM = {
+  PU: [{id:"incline",name:"Incline dumbbell press",sets:3,min:8,max:12,unit:"rep",inc:2,rest:120},{id:"chestpress",name:"Chest press machine",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"sdbpress",name:"Dumbbell shoulder press",sets:3,min:8,max:12,unit:"rep",inc:2,rest:90},{id:"clateral",name:"Cable lateral raise",sets:4,min:12,max:15,unit:"rep",rest:60},{id:"pushdown",name:"Triceps pushdown",sets:3,min:10,max:15,unit:"rep",rest:60},{id:"ohext",name:"Overhead triceps extension",sets:3,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"ccrunch",name:"Cable crunch",sets:3,min:12,max:15,unit:"rep",rest:60}],
+  PL: [{id:"pulldown",name:"Wide grip lat pulldown",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"csrow",name:"Chest supported row",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"crow",name:"Seated cable row",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"revpec",name:"Reverse pec deck",sets:3,min:12,max:15,unit:"rep",rest:60},{id:"curl",name:"Dumbbell curl",sets:3,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"hammer",name:"Hammer curl",sets:3,min:10,max:15,unit:"rep",inc:2,rest:60}],
+  LG: [{id:"squat",name:"Back squat",sets:3,min:6,max:10,unit:"rep",lower:true,rest:150},{id:"legpress",name:"Leg press",sets:3,min:8,max:12,unit:"rep",lower:true,rest:120},{id:"rdl",name:"Romanian deadlift",sets:3,min:8,max:12,unit:"rep",lower:true,rest:120},{id:"legext",name:"Leg extension",sets:3,min:12,max:15,unit:"rep",lower:true,rest:60},{id:"lcurl",name:"Lying leg curl",sets:3,min:10,max:15,unit:"rep",lower:true,rest:60},{id:"scalf",name:"Standing calf raise",sets:4,min:12,max:15,unit:"rep",lower:true,rest:60},{id:"legraise",name:"Lying leg raise",sets:3,min:12,max:15,unit:"rep",bodyweight:true,rest:60}],
+  VT: [{id:"pulldown",name:"Lat pulldown",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"sapd",name:"Single arm lat pulldown",sets:3,min:10,max:12,unit:"rep",rest:60},{id:"incline",name:"Incline dumbbell press",sets:3,min:8,max:12,unit:"rep",inc:2,rest:120},{id:"clateral",name:"Cable lateral raise",sets:4,min:12,max:15,unit:"rep",rest:60},{id:"revpec",name:"Reverse pec deck",sets:3,min:12,max:15,unit:"rep",rest:60},{id:"sapull",name:"Straight arm pulldown",sets:3,min:12,max:15,unit:"rep",rest:60},{id:"plank",name:"Plank",sets:3,min:45,max:45,unit:"detik",bodyweight:true,rest:60}],
+  AU: [{id:"inccurl",name:"Incline dumbbell curl",sets:3,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"hammer",name:"Hammer curl",sets:3,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"pushdown",name:"Triceps pushdown",sets:3,min:10,max:15,unit:"rep",rest:60},{id:"ohext",name:"Overhead triceps extension",sets:3,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"legpress",name:"Leg press",sets:3,min:8,max:12,unit:"rep",lower:true,rest:120},{id:"lcurl",name:"Lying leg curl",sets:3,min:10,max:15,unit:"rep",lower:true,rest:60},{id:"scalf",name:"Standing calf raise",sets:3,min:12,max:15,unit:"rep",lower:true,rest:60}],
+  /* program sebelumnya, dipakai untuk menampilkan riwayat */
+  UA: [{id:"bench",name:"Bench press",sets:3,min:8,max:10,unit:"rep",rest:120},{id:"row",name:"Barbell row",sets:3,min:8,max:10,unit:"rep",rest:120},{id:"mpress",name:"Machine shoulder press",sets:3,min:10,max:12,unit:"rep",rest:90},{id:"pulldown",name:"Lat pulldown",sets:2,min:10,max:12,unit:"rep",rest:90},{id:"ccurl",name:"Cable curl",sets:2,min:10,max:12,unit:"rep",rest:60},{id:"pushdown",name:"Triceps pushdown",sets:2,min:10,max:12,unit:"rep",rest:60}],
+  LA: [{id:"squat",name:"Squat",sets:3,min:8,max:10,unit:"rep",lower:true,rest:120},{id:"rdl",name:"Romanian deadlift",sets:3,min:8,max:10,unit:"rep",lower:true,rest:120},{id:"legpress",name:"Leg press",sets:3,min:10,max:12,unit:"rep",lower:true,rest:90},{id:"legcurl",name:"Seated leg curl",sets:3,min:10,max:12,unit:"rep",lower:true,rest:90},{id:"ccrunch",name:"Cable crunch",sets:3,min:12,max:15,unit:"rep",rest:60}],
+  R:  [{id:"tread",name:"Treadmill jalan cepat",sets:1,min:20,max:30,unit:"menit",bodyweight:true,rest:0},{id:"ccrunch",name:"Cable crunch",sets:3,min:12,max:15,unit:"rep",rest:60},{id:"plank",name:"Plank",sets:3,min:30,max:45,unit:"detik",bodyweight:true,rest:60}],
+  UB: [{id:"inclinebb",name:"Incline bench press",sets:3,min:8,max:10,unit:"rep",rest:120},{id:"crow",name:"Seated cable row",sets:3,min:10,max:12,unit:"rep",rest:90},{id:"pulldown",name:"Lat pulldown",sets:3,min:10,max:12,unit:"rep",rest:90},{id:"clateral",name:"Cable lateral raise",sets:3,min:12,max:15,unit:"rep",rest:60},{id:"ccurl",name:"Cable curl",sets:2,min:10,max:12,unit:"rep",rest:60},{id:"pushdown",name:"Triceps pushdown",sets:2,min:10,max:12,unit:"rep",rest:60}],
+  LB: [{id:"legpress",name:"Leg press",sets:3,min:10,max:12,unit:"rep",lower:true,rest:90},{id:"rdl",name:"Romanian deadlift",sets:3,min:8,max:10,unit:"rep",lower:true,rest:120},{id:"legext",name:"Leg extension",sets:3,min:12,max:15,unit:"rep",lower:true,rest:60},{id:"legcurl",name:"Seated leg curl",sets:3,min:10,max:12,unit:"rep",lower:true,rest:90},{id:"calf",name:"Calf raise (Smith machine)",sets:3,min:12,max:15,unit:"rep",lower:true,rest:60}],
+  /* program lama 3 hari, dipakai untuk menampilkan riwayat */
+  A: [{id:"squat",name:"Squat",sets:3,min:8,max:10,unit:"rep",lower:true,rest:120},{id:"bench",name:"Bench press",sets:3,min:8,max:10,unit:"rep",rest:120},{id:"row",name:"Barbell row",sets:3,min:8,max:10,unit:"rep",rest:120},{id:"dbpress",name:"Dumbbell shoulder press",sets:2,min:10,max:12,unit:"rep",rest:90},{id:"curl",name:"Bicep curl",sets:2,min:10,max:12,unit:"rep",rest:60},{id:"plank",name:"Plank",sets:3,min:30,max:45,unit:"detik",bodyweight:true,rest:60}],
+  B: [{id:"rdl",name:"Romanian deadlift",sets:3,min:8,max:10,unit:"rep",lower:true,rest:120},{id:"incline",name:"Incline dumbbell press",sets:3,min:8,max:10,unit:"rep",rest:120},{id:"pulldown",name:"Lat pulldown",sets:3,min:10,max:12,unit:"rep",rest:90},{id:"legpress",name:"Leg press",sets:3,min:10,max:12,unit:"rep",lower:true,rest:90},{id:"lateral",name:"Lateral raise",sets:3,min:12,max:15,unit:"rep",rest:60},{id:"pushdown",name:"Triceps pushdown",sets:2,min:10,max:12,unit:"rep",rest:60}]
+};
+const WEEK = ["PU","PL","LG","VT","AU"];
+const WL = {PU:"Push day",PL:"Pull day",LG:"Leg day",VT:"V-Taper day",AU:"Arms + Legs",UA:"Upper A",LA:"Lower A",R:"Ringan",UB:"Upper B",LB:"Lower B",A:"Full body A",B:"Full body B"};
+const WSUB = {PU:"Dada, bahu, triceps",PL:"Punggung dan biceps",LG:"Kaki, jangan di-skip",VT:"Punggung lebar dan bahu",AU:"Lengan dan kaki",UA:"Dada, punggung, bahu, lengan",LA:"Kaki dan perut",R:"Pemulihan aktif",UB:"Dada, punggung, bahu, lengan",LB:"Kaki dan perut"};
+const WDAY = {1:"PU",2:"PL",3:"LG",5:"VT",6:"AU"};
+/* angka rep pasti untuk program aktif */
+const FIXREP={"6-10":10,"8-12":12,"10-12":12,"10-15":15,"12-15":15};
+WEEK.forEach(k=>PROGRAM[k].forEach(e=>{const r=FIXREP[e.min+"-"+e.max];if(r){e.min=r;e.max=r}}));
+function rng(e){return e.min===e.max?String(e.max):e.min+"–"+e.max}
+const ALL_EX = Object.values(PROGRAM).flat().filter((e,i,a)=>a.findIndex(x=>x.id===e.id)===i);
+const DAYS = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+const TRAIN_DAYS = [1,2,3,5,6];
+
+const MEALS = {
+  budget: {label:"Budget Rp50 ribu", note:"Menu untuk budget maksimal Rp50 ribu per hari, disusun untuk gym pagi setelah Subuh. Defisit kalori ringan untuk membakar lemak perut, protein tinggi untuk menjaga dan menambah otot. Tanpa masak, cukup 3 telur rebus.", items:[
+    {id:"b1",time:"Sebelum gym · setelah Subuh",name:"½ takaran Wegen (±48 g) + 200 ml air",detail:"Minum sekitar 30 menit sebelum latihan. Hanya di hari latihan, lewati di hari Kamis dan Minggu.",price:8000,kcal:225,protein:10},
+    {id:"b2",time:"Sarapan setelah gym · 07.00",name:"3 telur rebus + 1 pisang",detail:"Makan paling lambat 1 jam setelah latihan untuk pemulihan otot.",price:8000,kcal:330,protein:19},
+    {id:"b3",time:"Makan siang · 12.30",name:"Warteg: ½ porsi nasi + telur + tempe + sayur banyak",detail:"Minta nasi setengah, perbanyak sayur. Hindari gorengan tepung dan kuah santan.",price:12000,kcal:560,protein:26},
+    {id:"b4",time:"Cemilan sore · 16.00",name:"1 pisang",detail:"Cemilan ringan supaya tidak kalap saat makan malam.",price:2000,kcal:90,protein:1},
+    {id:"b5",time:"Makan malam · 19.00",name:"Pecel lele + ½ porsi nasi + tempe + tahu + lalapan",detail:"Lele, tempe, dan tahu sumber protein murah. Makan paling lambat 3 jam sebelum tidur.",price:17000,kcal:680,protein:40}
+  ]}
+};
+const SHOP = [
+  ["Telur 1,5 kg (±21 butir, 3 per hari), untuk direbus","45.000"],["Pisang 2 sisir (2 buah per hari)","35.000"],
+  ["Wegen 950 g, cukup ±20 hari latihan","—"]
+];
+const DEMO = {
+  squat:{anchor:"foot",at:[48,95.5],a:{torso:4,thigh:180,shin:180,ua:222,fa:12},b:{torso:42,thigh:100,shin:200},eq:{type:"bar",at:"w",behind:true},q:"barbell squat form tutorial",
+    cues:["Bar di punggung atas, kaki selebar bahu, ujung kaki sedikit menghadap keluar.","Turun seperti mau duduk. Dada tetap tegak, lutut searah jari kaki.","Turun sampai paha sejajar lantai, lalu dorong naik lewat tumit."]},
+  bench:{anchor:"hip",at:[38,70],a:{torso:90,thigh:245,shin:185,ua:8,fa:0},b:{ua:245,fa:30},eq:{type:"bar",at:"w",pads:[[[22,75],[86,75],[86,80],[22,80]]],legs:[[[28,80],[28,98]],[[80,80],[80,98]]]},q:"bench press form tutorial",
+    cues:["Berbaring dengan mata tepat di bawah bar, kaki menapak lantai.","Turunkan bar pelan ke dada bawah, siku sekitar 45° dari badan.","Dorong naik sampai lengan lurus. Untuk awal, minta orang menjaga (spotter)."]},
+  row:{anchor:"foot",at:[50,95.5],a:{torso:62,thigh:135,shin:185,ua:180,fa:180},b:{ua:232,fa:150},eq:{type:"bar",at:"w"},q:"barbell row form tutorial",
+    cues:["Badan membungkuk sekitar 45°, punggung lurus, lutut sedikit ditekuk.","Tarik bar ke arah perut bawah, siku dekat badan.","Turunkan pelan sampai lengan lurus lagi."]},
+  dbpress:{anchor:"foot",at:[48,95.5],a:{torso:0,thigh:180,shin:180,ua:155,fa:5},b:{ua:4,fa:0},eq:{type:"db",at:"w"},q:"dumbbell shoulder press form",
+    cues:["Duduk atau berdiri tegak, dumbbell setinggi bahu.","Dorong ke atas sampai lengan hampir lurus.","Turunkan pelan. Jangan melengkungkan punggung bawah."]},
+  curl:{anchor:"foot",at:[48,95.5],a:{torso:0,thigh:180,shin:180,ua:176,fa:176},b:{ua:172,fa:30},eq:{type:"db",at:"w"},q:"dumbbell bicep curl form",
+    cues:["Berdiri tegak, siku menempel di samping badan.","Angkat dumbbell dengan menekuk siku saja.","Turunkan pelan. Jangan mengayun badan."]},
+  plank:{anchor:"foot",at:[14,94.5],a:{torso:88,thigh:252,shin:252,ua:180,fa:90},b:{torso:86,thigh:250},eq:{type:"none"},q:"plank form tutorial",
+    cues:["Tumpu dengan siku tepat di bawah bahu dan ujung kaki.","Badan lurus dari kepala sampai tumit.","Kencangkan perut. Jangan biarkan pinggul turun atau naik."]},
+  rdl:{anchor:"foot",at:[48,95.5],a:{torso:2,thigh:182,shin:178,ua:172,fa:178},b:{torso:64,thigh:140,shin:185,ua:180,fa:180},eq:{type:"bar",at:"w"},q:"romanian deadlift form tutorial",
+    cues:["Pegang bar di depan paha, lutut sedikit ditekuk.","Dorong pinggul ke belakang, bar turun dekat kaki sampai paha belakang terasa tertarik.","Punggung tetap lurus. Naik dengan mendorong pinggul ke depan."]},
+  incline:{anchor:"hip",at:[44,79],a:{torso:-35,thigh:85,shin:180,ua:2,fa:0},b:{ua:222,fa:22},eq:{type:"db",at:"w",pads:[[[34,83],[56,83],[56,87],[34,87]],[[39.5,82.4],[22,57.8],[18.4,60.1],[35.8,84.7]]],legs:[[[45,87],[45,98]],[[24,64],[30,98]]]},q:"incline dumbbell press form",
+    cues:["Atur bench miring 30–45°, dumbbell di samping dada atas.","Dorong ke atas sampai lengan hampir lurus.","Turunkan pelan sampai siku sedikit di bawah bahu."]},
+  pulldown:{anchor:"hip",at:[44,78],a:{torso:-10,thigh:90,shin:180,ua:8,fa:0},b:{ua:200,fa:25},eq:{type:"handle",at:"w",cable:[43,-6],pads:[[[34,82.5],[56,82.5],[56,86.5],[34,86.5]],[[57,69],[71,69],[71,72.5],[57,72.5]]],legs:[[[45,86],[45,98]],[[72,71],[78,71]],[[78,-6],[78,98]]]},q:"lat pulldown form tutorial",
+    cues:["Duduk, paha terkunci di bantalan, pegang bar lebih lebar dari bahu.","Tarik bar ke dada atas sambil membusungkan dada.","Naikkan pelan sampai lengan lurus lagi."]},
+  legpress:{anchor:"hip",at:[40,80],a:{torso:-60,thigh:50,shin:140,ua:170,fa:110},b:{thigh:65,shin:65},eq:{type:"sled",pads:[[[30,84],[52,84],[52,88],[30,88]],[[36.5,85.2],[12,71],[14,67.5],[38.5,81.7]]],legs:[[[40,88],[40,98]],[[14,72],[18,98]]]},q:"leg press form tutorial",
+    cues:["Punggung menempel sandaran, kaki selebar bahu di pijakan.","Turunkan pijakan sampai lutut sekitar 90°.","Dorong lewat tumit. Jangan kunci lutut lurus di atas."]},
+  lateral:{view:"front",a:{ua:174,fa:178},b:{ua:95,fa:88},eq:{type:"db",at:"w"},q:"dumbbell lateral raise form",
+    cues:["Berdiri, dumbbell di samping badan, siku sedikit ditekuk.","Angkat ke samping sampai setinggi bahu.","Turunkan pelan. Pakai beban ringan, ini otot kecil."]},
+  bridge:{anchor:"foot",at:[62,95.5],a:{torso:266,thigh:45,shin:165,ua:100,fa:95},b:{torso:236,thigh:88},eq:{type:"none"},q:"glute bridge form tutorial",
+    cues:["Berbaring telentang, lutut ditekuk, telapak kaki menapak lantai selebar pinggul.","Angkat pinggul sampai badan lurus dari bahu ke lutut, kencangkan bokong.","Tahan 1 detik di atas, lalu turunkan pelan."]},
+  walk:{anchor:"hip",at:[48,56.5],walk:true,a:{torso:4,thigh:155,shin:190,ua:160,fa:150},b:{thigh:205,shin:200,ua:200,fa:192},eq:{type:"none"},q:"brisk walking proper form",
+    cues:["Jalan santai tapi agak cepat, masih bisa ngobrol tanpa terengah-engah.","Badan tegak, ayunkan lengan alami.","Bisa di treadmill gym atau jalan di sekitar kos selama 20–30 menit."]},
+  mpress:{anchor:"hip",at:[44,78],a:{torso:-8,thigh:90,shin:180,ua:150,fa:8},b:{ua:6,fa:2},eq:{type:"handle",at:"w",pads:[[[34,82.5],[56,82.5],[56,86.5],[34,86.5]],[[33,82],[29,50],[33.5,49.5],[37.5,82]]],legs:[[[45,86],[45,98]],[[28,36],[28,98]]]},q:"machine shoulder press form",
+    cues:["Atur kursi supaya pegangan sejajar bahu, punggung menempel sandaran.","Dorong pegangan ke atas sampai lengan hampir lurus.","Turunkan pelan sampai pegangan setinggi bahu lagi."]},
+  ccurl:{anchor:"foot",at:[46,95.5],a:{torso:0,thigh:180,shin:180,ua:176,fa:176},b:{ua:172,fa:30},eq:{type:"handle",at:"w",cable:[63,92],legs:[[[68,-6],[68,98]]]},q:"cable bicep curl form",
+    cues:["Pasang bar pendek di kabel paling bawah, berdiri satu langkah dari mesin.","Siku menempel di samping badan, tekuk siku untuk menarik bar ke atas.","Turunkan pelan. Badan jangan ikut mengayun."]},
+  inclinebb:{anchor:"hip",at:[44,79],a:{torso:-35,thigh:85,shin:180,ua:2,fa:0},b:{ua:222,fa:22},eq:{type:"bar",at:"w",pads:[[[34,83],[56,83],[56,87],[34,87]],[[39.5,82.4],[22,57.8],[18.4,60.1],[35.8,84.7]]],legs:[[[45,87],[45,98]],[[24,64],[30,98]]]},q:"incline barbell bench press form",
+    cues:["Atur bench miring 30–45°, berbaring dengan bar di atas dada atas.","Turunkan bar pelan ke dada atas, siku sekitar 45° dari badan.","Dorong naik sampai lengan lurus. Pakai spotter atau safety bar."]},
+  crow:{anchor:"hip",at:[34,84],a:{torso:0,thigh:80,shin:100,ua:105,fa:95},b:{ua:205,fa:95},eq:{type:"handle",at:"w",cable:[86,64],pads:[[[22,88],[46,88],[46,92],[22,92]],[[76,70],[80,70],[80,92],[76,92]]],legs:[[[34,92],[34,98]],[[78,92],[78,98]],[[88,40],[88,98]]]},q:"seated cable row form",
+    cues:["Duduk tegak, kaki menapak di pijakan, lutut sedikit ditekuk.","Tarik pegangan ke perut sambil merapatkan tulang belikat.","Luruskan lengan pelan. Badan tetap tegak, jangan ikut condong."]},
+  clateral:{view:"front",a:{ua:174,fa:178},b:{ua:95,fa:88},eq:{type:"handle",at:"w",cable:true},q:"cable lateral raise form",
+    cues:["Pasang pegangan di kabel paling bawah, berdiri di samping mesin.","Angkat lengan ke samping sampai setinggi bahu, siku sedikit ditekuk.","Turunkan pelan. Pakai beban ringan, ini otot kecil."]},
+  legcurl:{anchor:"hip",at:[40,74],a:{torso:-10,thigh:90,shin:95,ua:170,fa:120},b:{shin:185},eq:{type:"none",roller:"back",pads:[[[30,78],[56,78],[56,82],[30,82]],[[30,78],[25,48],[29.5,47.5],[34,78]],[[54,65],[66,65],[66,68.5],[54,68.5]]],legs:[[[40,82],[40,98]],[[67,60],[67,98]]]},q:"seated leg curl form",
+    cues:["Duduk, bantalan atas mengunci paha, bantalan bawah di belakang pergelangan kaki.","Tekuk lutut, tarik bantalan ke bawah sejauh mungkin.","Kembalikan pelan sampai kaki hampir lurus."]},
+  legext:{anchor:"hip",at:[40,74],a:{torso:-10,thigh:90,shin:185,ua:170,fa:120},b:{shin:92},eq:{type:"none",roller:"front",pads:[[[30,78],[56,78],[56,82],[30,82]],[[30,78],[25,48],[29.5,47.5],[34,78]]],legs:[[[40,82],[40,98]]]},q:"leg extension machine form",
+    cues:["Duduk, punggung menempel sandaran, bantalan di depan pergelangan kaki.","Luruskan lutut sampai kaki hampir lurus, tahan 1 detik.","Turunkan pelan. Jangan dihentak."]},
+  calf:{anchor:"foot",at:[48,93.5],atB:[48,89],a:{torso:0,thigh:180,shin:180,ua:222,fa:12},b:{},eq:{type:"bar",at:"w",behind:true,pads:[[[42,96],[60,96],[60,98.6],[42,98.6]]],legs:[[[20,-6],[20,98]],[[76,-6],[76,98]]]},q:"smith machine calf raise form",
+    cues:["Berdiri dengan ujung kaki di pijakan, bar Smith machine di punggung atas.","Jinjit setinggi mungkin, tahan 1 detik di atas.","Turunkan tumit pelan sampai betis terasa meregang."]},
+  tread:{anchor:"hip",at:[46,54.5],walk:true,a:{torso:4,thigh:155,shin:190,ua:160,fa:150},b:{thigh:205,shin:200,ua:200,fa:192},eq:{type:"none",pads:[[[14,94.5],[84,94.5],[84,98.6],[14,98.6]],[[70,50],[86,50],[86,53],[70,53]]],legs:[[[84,95],[80,51]]]},q:"treadmill brisk walking incline",
+    cues:["Jalan cepat di treadmill, kecepatan sekitar 5–6 km/jam.","Boleh naikkan kemiringan 3–5% supaya lebih terasa, tanpa berpegangan.","Masih bisa ngobrol tanpa terengah-engah, itu intensitas yang pas."]},
+  ccrunch:{anchor:"hip",at:[46,74],a:{torso:8,thigh:180,shin:270,ua:40,fa:300},b:{torso:70,ua:102,fa:2},eq:{type:"handle",at:"w",cable:[32,-6],legs:[[[28,-6],[28,98]]]},q:"cable crunch form tutorial",
+    cues:["Berlutut di depan mesin kabel, pegang tali di samping kepala.","Bungkukkan badan ke bawah dengan mengencangkan perut, bukan menarik pakai tangan.","Naik pelan ke posisi awal."]},
+  chestpress:{anchor:"hip",at:[40,78],a:{torso:-8,thigh:90,shin:180,ua:250,fa:90},b:{ua:92,fa:90},eq:{type:"handlev",at:"w",pads:[[[30,82.5],[52,82.5],[52,86.5],[30,86.5]],[[29,82],[25,46],[29.5,45.5],[33.5,82]]],legs:[[[41,86],[41,98]],[[24,36],[24,98]]]},q:"chest press machine form",
+    cues:["Atur kursi supaya pegangan sejajar dada tengah, punggung menempel sandaran.","Dorong pegangan ke depan sampai lengan hampir lurus.","Kembalikan pelan sampai dada terasa meregang."]},
+  sdbpress:{anchor:"hip",at:[44,78],a:{torso:-8,thigh:90,shin:180,ua:150,fa:8},b:{ua:6,fa:2},eq:{type:"db",at:"w",pads:[[[34,82.5],[56,82.5],[56,86.5],[34,86.5]],[[33,82],[29,50],[33.5,49.5],[37.5,82]]],legs:[[[45,86],[45,98]]]},q:"seated dumbbell shoulder press form",
+    cues:["Duduk di bench dengan sandaran tegak, dumbbell setinggi bahu.","Dorong ke atas sampai lengan hampir lurus.","Turunkan pelan. Punggung tetap menempel sandaran."]},
+  ohext:{anchor:"hip",at:[44,78],a:{torso:-4,thigh:90,shin:180,ua:355,fa:200},b:{fa:2},eq:{type:"db",vert:true,at:"w",pads:[[[34,82.5],[56,82.5],[56,86.5],[34,86.5]],[[35,82],[33,52],[37.5,51.5],[39.5,82]]],legs:[[[45,86],[45,98]]]},q:"seated overhead dumbbell triceps extension form",
+    cues:["Duduk tegak, pegang satu dumbbell dengan dua tangan di atas kepala.","Turunkan dumbbell ke belakang kepala dengan menekuk siku saja.","Luruskan lagi ke atas. Siku tetap mengarah ke depan."]},
+  csrow:{anchor:"foot",at:[24,95.5],a:{torso:55,thigh:200,shin:200,ua:180,fa:180},b:{ua:235,fa:175},eq:{type:"handle",at:"w",pads:[[[48.3,59],[64.6,47.5],[66.9,50.8],[50.6,62.3]]],legs:[[[56,58],[56,98]],[[48,98],[66,98]]]},q:"chest supported row form",
+    cues:["Tempelkan dada di bantalan, kaki menapak kuat.","Tarik pegangan ke arah perut sambil merapatkan tulang belikat.","Turunkan pelan sampai lengan lurus. Dada jangan terangkat dari bantalan."]},
+  revpec:{view:"front",a:{ua:200,fa:330},b:{ua:92,fa:90},eq:{type:"handlev",at:"w",legs:[[[50,-6],[50,30]]]},q:"reverse pec deck form",
+    cues:["Duduk menghadap mesin, dada menempel bantalan, pegang gagang setinggi bahu.","Buka lengan ke samping belakang sampai sejajar badan, siku sedikit ditekuk.","Kembalikan pelan. Fokus di bahu belakang, jangan pakai beban berat."]},
+  hammer:{anchor:"foot",at:[48,95.5],a:{torso:0,thigh:180,shin:180,ua:176,fa:176},b:{ua:172,fa:30},eq:{type:"db",vert:true,at:"w"},q:"dumbbell hammer curl form",
+    cues:["Berdiri tegak, pegang dumbbell dengan telapak tangan saling berhadapan.","Angkat dumbbell dengan menekuk siku, posisi tangan tetap seperti memegang palu.","Turunkan pelan. Siku tetap di samping badan."]},
+  lcurl:{anchor:"hip",at:[50,76],a:{torso:270,thigh:90,shin:90,ua:200,fa:160},b:{shin:10},eq:{type:"none",roller:"front",pads:[[[12,81],[78,81],[78,85],[12,85]]],legs:[[[20,85],[20,98]],[[70,85],[70,98]]]},q:"lying leg curl machine form",
+    cues:["Berbaring tengkurap, bantalan di belakang pergelangan kaki, pegang gagang depan.","Tekuk lutut, tarik bantalan ke arah bokong.","Turunkan pelan sampai kaki hampir lurus. Pinggul tetap menempel bantalan."]},
+  scalf:{anchor:"foot",at:[48,93.5],atB:[48,89],a:{torso:0,thigh:180,shin:180,ua:150,fa:100},b:{},eq:{type:"none",pads:[[[42,96],[60,96],[60,98.6],[42,98.6]],[[60,62],[74,62],[74,65],[60,65]]],legs:[[[70,62],[70,98]]]},q:"standing calf raise machine form",
+    cues:["Berdiri dengan ujung kaki di pijakan, bantalan mesin di bahu atau pegang gagang.","Jinjit setinggi mungkin, tahan 1 detik di atas.","Turunkan tumit pelan sampai betis terasa meregang."]},
+  sapd:{anchor:"hip",at:[44,78],a:{torso:-10,thigh:90,shin:180,ua:8,fa:0},b:{ua:200,fa:25},eq:{type:"handle",at:"w",cable:[43,-6],pads:[[[34,82.5],[56,82.5],[56,86.5],[34,86.5]],[[57,69],[71,69],[71,72.5],[57,72.5]]],legs:[[[45,86],[45,98]],[[72,71],[78,71]],[[78,-6],[78,98]]]},q:"single arm lat pulldown form",
+    cues:["Duduk, pasang pegangan satu tangan di kabel atas.","Tarik siku ke bawah dan ke samping badan sampai tangan sejajar bahu.","Naikkan pelan sampai lengan lurus dan punggung terasa meregang."]},
+  sapull:{anchor:"foot",at:[40,95.5],a:{torso:25,thigh:175,shin:180,ua:60,fa:60},b:{ua:172,fa:172},eq:{type:"handle",at:"w",cable:[80,-6],legs:[[[84,-6],[84,98]]]},q:"straight arm cable pulldown form",
+    cues:["Berdiri menghadap kabel atas, badan sedikit condong, lengan lurus ke depan atas.","Tarik tali ke bawah sampai paha dengan lengan tetap lurus.","Naikkan pelan. Rasakan tarikan di punggung samping."]},
+  inccurl:{anchor:"hip",at:[44,79],a:{torso:-35,thigh:85,shin:180,ua:185,fa:185},b:{fa:40},eq:{type:"db",vert:true,at:"w",pads:[[[34,83],[56,83],[56,87],[34,87]],[[39.5,82.4],[22,57.8],[18.4,60.1],[35.8,84.7]]],legs:[[[45,87],[45,98]],[[24,64],[30,98]]]},q:"incline dumbbell curl form",
+    cues:["Duduk bersandar di bench miring 45°, lengan menggantung lurus ke bawah.","Angkat dumbbell dengan menekuk siku. Lengan atas tetap diam.","Turunkan pelan sampai lengan lurus penuh."]},
+  armcircle:{name:"Putar lengan",view:"front",a:{ua:20,fa:20},b:{ua:170,fa:170},eq:{type:"none"},q:"arm circles warm up",
+    cues:["Berdiri tegak, rentangkan kedua lengan ke samping.","Putar lengan membentuk lingkaran, mulai kecil lalu makin besar.","10 kali ke depan, lalu 10 kali ke belakang."]},
+  facepull:{name:"Cable face pull ringan",anchor:"foot",at:[44,95.5],a:{torso:0,thigh:180,shin:180,ua:85,fa:85},b:{ua:250,fa:40},eq:{type:"handle",at:"w",cable:[84,20],legs:[[[88,-6],[88,98]]]},q:"cable face pull form",
+    cues:["Pasang tali di kabel setinggi wajah, beban sangat ringan.","Tarik tali ke arah wajah, siku terbuka ke samping setinggi bahu.","Kembalikan pelan. Ini untuk membangunkan bahu, bukan melatih berat."]},
+  inpushup:{name:"Incline push-up",anchor:"foot",at:[12,95.5],a:{torso:60,thigh:240,shin:240,ua:180,fa:180},b:{torso:66,thigh:246,shin:246,ua:215,fa:150},eq:{type:"none",pads:[[[58,89],[92,89],[92,93],[58,93]]],legs:[[[62,93],[62,98]],[[88,93],[88,98]]]},q:"incline push up on bench",
+    cues:["Tangan bertumpu di pinggir bench selebar bahu, badan lurus.","Turunkan dada ke arah bench dengan menekuk siku.","Dorong kembali sampai lengan lurus."]},
+  legswing:{name:"Ayun kaki",anchor:"hip",at:[46,56.5],a:{torso:0,thigh:140,shin:175,ua:100,fa:92},b:{thigh:215,shin:200},far:{thigh:180,shin:180},eq:{type:"none",legs:[[[71,28],[71,98]]]},q:"leg swings warm up",
+    cues:["Berpegangan pada tiang atau rak untuk keseimbangan.","Ayunkan satu kaki ke depan dan ke belakang dengan santai.","10 kali, lalu ganti ayunan ke samping. Ulangi untuk kaki lain."]},
+  hipcircle:{name:"Putar pinggul",anchor:"foot",at:[48,95.5],a:{torso:10,thigh:175,shin:180,ua:200,fa:40},b:{torso:-10,thigh:185},eq:{type:"none"},q:"hip circles warm up",
+    cues:["Berdiri, kaki selebar bahu, tangan di pinggang.","Putar pinggul membentuk lingkaran besar.","10 putaran ke kanan, lalu 10 ke kiri."]},
+  bwsquat:{name:"Squat tanpa beban",anchor:"foot",at:[48,95.5],a:{torso:4,thigh:180,shin:180,ua:90,fa:90},b:{torso:42,thigh:100,shin:200,ua:80,fa:80},eq:{type:"none"},q:"bodyweight squat form",
+    cues:["Kaki selebar bahu, lengan lurus ke depan untuk keseimbangan.","Turun pelan sampai paha sejajar lantai, dada tetap tegak.","Naik lagi lewat tumit."]},
+  chestst:{name:"Stretch dada",anchor:"hip",at:[46,56.5],a:{torso:0,thigh:180,shin:180,ua:268,fa:268},b:{torso:-6},far:{ua:180,fa:180},eq:{type:"none",legs:[[[19,18],[19,98]]]},q:"chest stretch doorway post",
+    cues:["Pegang tiang setinggi bahu dengan lengan lurus ke belakang.","Putar badan pelan menjauhi tiang sampai dada terasa tertarik.","Tahan 30 detik, lalu ganti sisi."]},
+  shoulderst:{name:"Stretch bahu",anchor:"hip",at:[46,56.5],a:{torso:0,thigh:180,shin:180,ua:95,fa:95},b:{ua:88,fa:88},far:{ua:150,fa:60},eq:{type:"none"},q:"cross body shoulder stretch",
+    cues:["Luruskan satu lengan menyilang di depan dada.","Tarik pelan dengan tangan lain di bagian siku.","Tahan 30 detik, lalu ganti sisi."]},
+  tricepst:{name:"Stretch triceps",anchor:"hip",at:[46,56.5],a:{torso:0,thigh:180,shin:180,ua:0,fa:190},b:{ua:352},far:{ua:330,fa:60},eq:{type:"none"},q:"overhead triceps stretch",
+    cues:["Angkat satu lengan, tekuk siku sampai tangan di belakang kepala.","Dorong siku pelan dengan tangan lain.","Tahan 30 detik, lalu ganti sisi."]},
+  backst:{name:"Stretch punggung",anchor:"foot",at:[40,95.5],a:{torso:75,thigh:165,shin:180,ua:85,fa:85},b:{torso:88,thigh:155},eq:{type:"none",legs:[[[86,30],[86,98]]]},q:"lat stretch holding post",
+    cues:["Pegang tiang atau rak setinggi pinggang dengan lengan lurus.","Dorong pinggul ke belakang sampai punggung samping terasa tertarik.","Tahan 30 detik sambil bernapas pelan."]},
+  quadst:{name:"Stretch paha depan",anchor:"hip",at:[46,56.5],a:{torso:0,thigh:182,shin:350,ua:200,fa:170},b:{shin:355},far:{thigh:180,shin:180,ua:110,fa:100},eq:{type:"none"},q:"standing quad stretch",
+    cues:["Berdiri dengan satu kaki, pegang punggung kaki lainnya.","Tarik tumit ke arah bokong, lutut menghadap lantai.","Tahan 30 detik, lalu ganti kaki."]},
+  hamst:{name:"Stretch paha belakang",anchor:"hip",at:[40,56.5],a:{torso:15,thigh:110,shin:110,ua:150,fa:140},b:{torso:40,ua:125,fa:115},far:{thigh:180,shin:180},eq:{type:"none",pads:[[[70,72],[90,72],[90,76],[70,76]]],legs:[[[74,76],[74,98]],[[86,76],[86,98]]]},q:"standing hamstring stretch on bench",
+    cues:["Letakkan tumit di bench rendah, kaki lurus.","Condongkan badan ke depan dengan punggung tetap lurus.","Tahan 30 detik, lalu ganti kaki."]},
+  calfst:{name:"Stretch betis",anchor:"hip",at:[44,56.5],a:{torso:15,thigh:205,shin:200,ua:70,fa:75},b:{torso:22},far:{thigh:168,shin:188},eq:{type:"none",legs:[[[76,10],[76,98]]]},q:"wall calf stretch",
+    cues:["Tangan menempel di dinding, satu kaki di belakang dengan lutut lurus.","Tekan tumit belakang ke lantai sambil condong ke dinding.","Tahan 30 detik, lalu ganti kaki."]},
+  hipst:{name:"Stretch pinggul",anchor:"hip",at:[44,74],atB:[47,74],a:{torso:0,thigh:105,shin:178,ua:150,fa:150},b:{},far:{thigh:195,shin:270},eq:{type:"none"},q:"kneeling hip flexor stretch",
+    cues:["Posisi lunge, lutut belakang menyentuh lantai.","Dorong pinggul pelan ke depan sampai pangkal paha belakang terasa tertarik.","Tahan 30 detik, lalu ganti sisi."]},
+  legraise:{name:"Lying leg raise",anchor:"hip",at:[50,78],a:{torso:270,thigh:92,shin:92,ua:262,fa:262},b:{thigh:8,shin:8},eq:{type:"none",pads:[[[10,83],[80,83],[80,87],[10,87]]],legs:[[[18,87],[18,98]],[[72,87],[72,98]]]},q:"lying leg raise on bench form",
+    cues:["Berbaring di bench, pegang pinggir bench di belakang kepala.","Angkat kedua kaki lurus sampai tegak, punggung bawah tetap menempel.","Turunkan pelan sampai hampir menyentuh bench. Jangan dihentak."]},
+  legsup:{name:"Angkat kaki ke dinding",anchor:"hip",at:[60,90],a:{torso:270,thigh:2,shin:0,ua:95,fa:95},b:{thigh:-2,shin:-2},eq:{type:"none",legs:[[[66,20],[66,98]]]},q:"legs up the wall pose",
+    cues:["Berbaring telentang dengan bokong dekat dinding.","Luruskan kaki ke atas bersandar di dinding, tangan rileks di samping.","Tahan 5–10 menit sambil bernapas pelan. Bagus setiap selesai latihan dan sebelum tidur."]},
+  pushdown:{anchor:"foot",at:[46,95.5],a:{torso:8,thigh:180,shin:180,ua:172,fa:28},b:{fa:172},eq:{type:"handle",at:"w",cable:[60,-6],legs:[[[74,-6],[74,98]]]},q:"triceps pushdown form tutorial",
+    cues:["Berdiri di depan mesin kabel, siku menempel di samping badan.","Dorong tali atau bar ke bawah sampai lengan lurus.","Naikkan pelan sampai siku sekitar 90°. Siku jangan ikut bergerak."]}
+};
+try{const P2=CanvasRenderingContext2D.prototype;if(!P2.roundRect)P2.roundRect=function(x,y,w,h){this.rect(x,y,w,h)}}catch(_){}
+const BONE={torso:26,thigh:20,shin:20,ua:13,fa:12};
+const V=(a,l)=>{const r=a*Math.PI/180;return [Math.sin(r)*l,-Math.cos(r)*l]};
+const ADD=(p,q)=>[p[0]+q[0],p[1]+q[1]];
+function anglesAt(d,t){const o={};for(const k in d.a){const a=d.a[k],b=(d.b[k]??a);o[k]=a+(b-a)*t}return o}
+function sidePose(d,t){
+  const A=anglesAt(d,t);const tv=V(A.thigh,BONE.thigh),sv=V(A.shin,BONE.shin);
+  const at=d.atB?lerp2(d.at,d.atB,t):d.at;
+  const p=d.anchor==="foot"?[at[0]-sv[0]-tv[0],at[1]-sv[1]-tv[1]]:at;
+  const k=ADD(p,tv),f=ADD(k,sv),s=ADD(p,V(A.torso,BONE.torso)),e=ADD(s,V(A.ua,BONE.ua)),w=ADD(e,V(A.fa,BONE.fa));
+  return {A,p,k,f,s,e,w,h:ADD(s,V(A.torso,9.5))};
+}
+const C={skin:"#ffffff",skinD:"#c9d0da",shirt:"#ffffff",shirtD:"#c9d0da",shorts:"#ffffff",shortsD:"#c9d0da",shoe:"#ffffff",shoeD:"#c9d0da",sole:"#ffffff",hair:"#ffffff",iron:"#6f7a8c",ironM:"#8a95a8",ironL:"#b4bdcb",bench:"#3e4858",benchD:"#2f3846",cable:"#8a95a8"};
+function capsule(ctx,a,b,r1,r2,c){r1*=1.12;r2*=1.12;const g=Math.atan2(b[1]-a[1],b[0]-a[0]);ctx.fillStyle=c;ctx.beginPath();ctx.arc(a[0],a[1],r1,g+Math.PI/2,g-Math.PI/2);ctx.arc(b[0],b[1],r2,g-Math.PI/2,g+Math.PI/2);ctx.closePath();ctx.fill()}
+function lerp2(a,b,f){return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f]}
+function drawPlate(ctx,q){ctx.fillStyle=C.iron;ctx.beginPath();ctx.arc(q[0],q[1],10,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.ironM;ctx.beginPath();ctx.arc(q[0],q[1],7.2,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.ironL;ctx.beginPath();ctx.arc(q[0],q[1],2.2,0,Math.PI*2);ctx.fill()}
+function drawDB(ctx,q,horiz){ctx.save();ctx.translate(q[0],q[1]);if(!horiz)ctx.rotate(Math.PI/2);ctx.fillStyle=C.ironL;ctx.fillRect(-6,-1,12,2);ctx.fillStyle=C.iron;ctx.beginPath();ctx.roundRect(-9.5,-4.5,4.5,9,1.2);ctx.roundRect(5,-4.5,4.5,9,1.2);ctx.fill();ctx.restore()}
+function drawShoe(ctx,f,shin,dark){const fd=V(shin-90,1);capsule(ctx,ADD(f,[-fd[0]*1,-fd[1]*1]),ADD(f,[fd[0]*4.6,fd[1]*4.6]),2.6,2.2,dark?C.shoeD:C.shoe)}
+function drawHead(ctx,h,up,face,front){ctx.fillStyle=C.skin;ctx.beginPath();ctx.arc(h[0],h[1],6.6,0,Math.PI*2);ctx.fill()}
+function drawEquipBase(ctx,eq,P){
+  if(eq.legs)eq.legs.forEach(l=>capsule(ctx,l[0],l[1],1.6,1.6,C.benchD));
+  if(eq.pads)eq.pads.forEach(pg=>{ctx.fillStyle=C.bench;ctx.beginPath();pg.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.fill()});
+  if(eq.cable&&P){ctx.strokeStyle=C.cable;ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(eq.cable[0],eq.cable[1]);ctx.lineTo(P.w[0],P.w[1]);ctx.stroke();ctx.fillStyle=C.iron;ctx.beginPath();ctx.arc(eq.cable[0],eq.cable[1]+2,2.4,0,Math.PI*2);ctx.fill()}
+}
+function drawSide(ctx,d,t){
+  const P=sidePose(d,t),A=P.A,eq=d.eq||{};
+  const up=V(A.torso,1),face=V(A.torso+90,1),dk=[-1.6,-1];
+  const o=q=>ADD(q,dk);
+  let F;
+  if(d.walk){const q=sidePose(d,1-t);F={k:q.k,f:q.f,e:q.e,w:q.w,s:q.s,p:q.p,shin:q.A.shin}}
+  else if(d.far){const fa={...A,...d.far};const fk=ADD(P.p,V(fa.thigh,BONE.thigh)),ff=ADD(fk,V(fa.shin,BONE.shin)),fe=ADD(P.s,V(fa.ua,BONE.ua)),fw=ADD(fe,V(fa.fa,BONE.fa));F={k:fk,f:ff,e:fe,w:fw,s:P.s,p:P.p,shin:fa.shin}}
+  else F={k:P.k,f:P.f,e:P.e,w:P.w,s:P.s,p:P.p,shin:A.shin};
+  drawEquipBase(ctx,eq,P);
+  if(eq.behind&&eq.type==="bar")drawPlate(ctx,ADD(P.w,[-1,-1]));
+  /* far leg + far arm */
+  capsule(ctx,o(F.k),o(F.f),3.9,3,C.skinD);capsule(ctx,o(F.p),o(F.k),5.3,4.2,C.shortsD);drawShoe(ctx,o(F.f),F.shin,true);
+  capsule(ctx,o(F.e),o(F.w),2.7,2.2,C.skinD);capsule(ctx,o(F.s),o(F.e),3.3,2.8,C.skinD);capsule(ctx,o(F.s),lerp2(o(F.s),o(F.e),.4),3.7,3.4,C.shirtD);
+  /* torso */
+  capsule(ctx,P.s,lerp2(P.s,P.h,.45),2.6,2.6,C.skin);
+  capsule(ctx,P.p,P.s,6.2,7.2,C.shirt);
+  capsule(ctx,P.p,lerp2(P.p,P.s,.18),6.4,6.4,C.shorts);
+  /* near leg */
+  capsule(ctx,P.k,P.f,4,3,C.skin);capsule(ctx,lerp2(P.p,P.k,.6),P.k,4.6,4.1,C.skin);capsule(ctx,P.p,lerp2(P.p,P.k,.62),5.6,4.7,C.shorts);drawShoe(ctx,P.f,A.shin,false);
+  if(eq.roller){const c=ADD(lerp2(P.k,P.f,.82),V(A.shin+(eq.roller==="back"?90:-90),5.2));ctx.fillStyle=C.iron;ctx.beginPath();ctx.arc(c[0],c[1],3.8,0,Math.PI*2);ctx.fill()}
+  drawHead(ctx,P.h,up,face,false);
+  if(eq.type==="sled"){ctx.save();const c=ADD(P.f,V(A.shin,4.2));ctx.translate(c[0],c[1]);ctx.rotate(A.shin*Math.PI/180);ctx.fillStyle=C.iron;ctx.beginPath();ctx.roundRect(-14,-2.5,28,5,1.5);ctx.fill();ctx.restore()}
+  /* near arm */
+  capsule(ctx,P.e,P.w,2.8,2.3,C.skin);capsule(ctx,P.s,P.e,3.5,2.9,C.skin);capsule(ctx,P.s,lerp2(P.s,P.e,.42),3.9,3.6,C.shirt);
+  ctx.fillStyle=C.skin;ctx.beginPath();ctx.arc(P.w[0],P.w[1],2.6,0,Math.PI*2);ctx.fill();
+  if(eq.type==="bar"&&!eq.behind)drawPlate(ctx,P.w);
+  else if(eq.type==="db")drawDB(ctx,P.w,!eq.vert);
+  else if(eq.type==="handlev"){capsule(ctx,[P.w[0],P.w[1]-5],[P.w[0],P.w[1]+5],1.4,1.4,C.iron)}
+  else if(eq.type==="handle"){capsule(ctx,[P.w[0]-8,P.w[1]],[P.w[0]+8,P.w[1]],1.3,1.3,C.iron)}
+}
+function drawFront(ctx,d,t){
+  const A=anglesAt(d,t),eq=d.eq||{};
+  drawEquipBase(ctx,eq,null);
+  const legs=[[45,57,44.5,95.5],[55,57,55.5,95.5]];
+  legs.forEach(([hx,hy,fx,fy])=>{const k=[ (hx+fx)/2, 76];capsule(ctx,k,[fx,fy],4,3,C.skin);capsule(ctx,[hx,hy],k,5.4,4.4,C.skin);capsule(ctx,[hx,hy],lerp2([hx,hy],k,.55),5.8,5,C.shorts);
+    ctx.fillStyle=C.shoe;ctx.beginPath();ctx.ellipse(fx,fy+.8,4,2.8,0,0,Math.PI*2);ctx.fill();});
+  ctx.fillStyle=C.shorts;ctx.beginPath();ctx.roundRect(39.5,52,21,10,3);ctx.fill();
+  ctx.fillStyle=C.shirt;ctx.beginPath();ctx.moveTo(38,31);ctx.lineTo(62,31);ctx.quadraticCurveTo(64,32,62.5,36);ctx.lineTo(58.5,55);ctx.lineTo(41.5,55);ctx.lineTo(37.5,36);ctx.quadraticCurveTo(36,32,38,31);ctx.closePath();ctx.fill();
+  capsule(ctx,[50,30],[50,25],2.8,2.8,C.skin);
+  [1,-1].forEach(sg=>{
+    const s=[50+sg*11.5,33.5],e=ADD(s,(v=>[v[0]*sg,v[1]])(V(A.ua,BONE.ua))),w=ADD(e,(v=>[v[0]*sg,v[1]])(V(A.fa,BONE.fa)));
+    capsule(ctx,e,w,2.8,2.3,C.skin);capsule(ctx,s,e,3.5,2.9,C.skin);capsule(ctx,s,lerp2(s,e,.42),4,3.6,C.shirt);
+    ctx.fillStyle=C.skin;ctx.beginPath();ctx.arc(w[0],w[1],2.6,0,Math.PI*2);ctx.fill();
+    if(eq.type==="db")drawDB(ctx,w,false);
+    else if(eq.type==="handlev"){capsule(ctx,[w[0],w[1]-5],[w[0],w[1]+5],1.4,1.4,C.iron)}
+    else if(eq.type==="handle"){if(eq.cable){ctx.strokeStyle=C.cable;ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(50-sg*30,96);ctx.lineTo(w[0],w[1]);ctx.stroke();ctx.fillStyle=C.iron;ctx.beginPath();ctx.arc(50-sg*30,95,2.4,0,Math.PI*2);ctx.fill()}capsule(ctx,[w[0]-2.5,w[1]],[w[0]+2.5,w[1]],1.4,1.4,C.iron)}
+  });
+  drawHead(ctx,[50,20.5],[0,-1],[0,0],true);
+}
+function drawDemo(cv,id,t,col){
+  const d=DEMO[id];if(!d)return;const ctx=cv.getContext("2d");const W=cv.width,sc=W/112;
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,W);ctx.setTransform(sc,0,0,sc,6*sc,9*sc);
+  ctx.strokeStyle="#4a5466";ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(-6,98.6);ctx.lineTo(106,98.6);ctx.stroke();
+  if(d.view==="front")drawFront(ctx,d,t);else drawSide(ctx,d,t);
+}
+
+let reduceMotion=false;try{reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(_){}
+function animLoop(ts){try{animFrame(ts)}catch(_){}requestAnimationFrame(animLoop)}
+function animFrame(ts){
+  const cs=getComputedStyle(document.documentElement);
+  const col={ink:cs.getPropertyValue("--ink").trim()||"#151a21",accent:cs.getPropertyValue("--accent").trim()||"#1d55c4",muted:cs.getPropertyValue("--muted").trim()||"#5d6774",line:cs.getPropertyValue("--line").trim()||"#d5dbe2"};
+  const ph=(ts%3000)/3000,raw=ph<.12?0:ph<.5?(ph-.12)/.38:ph<.62?1:1-(ph-.62)/.38,t=reduceMotion?1:(1-Math.cos(raw*Math.PI))/2;
+  document.querySelectorAll("canvas[data-anim]").forEach(cv=>drawDemo(cv,cv.dataset.anim,t,col));
+  if(!$("#modal").hidden&&openDemo)drawDemo($("#mCanvas"),openDemo,t,col);
+}
+let openDemo=null;
+function showDemo(id){
+  const ex=((draft&&PROGRAM[draft.workout])||[]).find(x=>x.id===id)||ALL_EX.find(x=>x.id===id),d=DEMO[id];if(!d)return;
+  openDemo=id;$("#mTitle").textContent=(ex&&ex.name)||d.name||"";
+  $("#mCues").innerHTML=d.cues.map(c=>`<li>${esc(c)}</li>`).join("");
+  $("#mYt").href="https://www.youtube.com/results?search_query="+encodeURIComponent(d.q);
+  $("#modal").hidden=false;$("#mClose").focus();
+}
+function hideDemo(){$("#modal").hidden=true;openDemo=null}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#modal").hidden)hideDemo()});
+function rp(n){return "Rp"+n.toLocaleString("id-ID")}
+function dateKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+let tier="budget";
+let mealDone=[];let mealChain=Promise.resolve();
+
+let sessions = [];
+let mode = "loading"; // db | local | loading
+let col = null;
+let tab = "hari";
+let draft = null;
+let chosen = null;
+let pendingDelete = null;
+let chartEx = "squat";
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(syncable(k)){const m=lsGet("gymlog-meta")||{};m[k]=Date.now();try{localStorage.setItem("gymlog-meta",JSON.stringify(m))}catch(_){}if(typeof scheduleSync==="function")scheduleSync()}}
+const SYNC_SKIP=["gymlog-sync-token","gymlog-sync-gist","gymlog-sync-last","gymlog-meta","gymlog-draft","gymlog-lastbackup","gymlog-tier"];
+function syncable(k){return k.startsWith("gymlog-")&&!SYNC_SKIP.includes(k)}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200)}
+function todayStr(d=new Date()){return d.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long"})}
+
+function sorted(){return [...sessions].sort((a,b)=>b.ts-a.ts)}
+function nextAfter(w){const i=WEEK.indexOf(w);return i<0?"PU":WEEK[(i+1)%WEEK.length]}
+function nextWorkout(){const today=WDAY[new Date().getDay()];if(today)return today;const s=sorted();return s.length?nextAfter(s[0].workout):"PU"}
+function lastFor(exId){for(const s of sorted()){const r=s.sets&&s.sets[exId];if(r&&r.some(x=>x.reps))return r}return null}
+
+function newDraft(w){
+  const sets={};
+  for(const ex of PROGRAM[w]){
+    const prev=lastFor(ex.id);
+    const sug=suggest(ex,prev);
+    sets[ex.id]=Array.from({length:ex.sets},()=>({kg:sug.kg??"",reps:"",done:false}));
+  }
+  return {workout:w,sets,started:Date.now()};
+}
+function suggest(ex,prev){
+  const tgt=ex.sets+" set × "+rng(ex)+" "+ex.unit;
+  if(ex.bodyweight)return {kg:null,text:ex.unit==="menit"?"Jalan agak cepat, masih bisa ngobrol.":ex.unit==="rep"?"Tanpa beban. Gerak pelan dan terkontrol, punggung bawah tetap menempel.":"Tahan badan lurus dari kepala sampai tumit."};
+  const top=prev?Math.max(0,...prev.map(x=>+x.kg||0)):0;
+  if(!top)return {kg:null,text:"Pertama kali: pilih beban yang bisa kamu angkat "+ex.max+" kali dengan teknik benar."};
+  const inc=ex.inc||(ex.lower?5:2.5);
+  return {kg:top,text:"Terakhir "+top+" kg. Kalau semua set lancar sampai "+ex.max+" rep, naik ke "+(top+inc)+" kg."};
+}
+
+function loadDraft(){
+  const d=lsGet("gymlog-draft");
+  if(!d||!d.workout||d.workout!==WDAY[new Date().getDay()]||!(Date.now()-d.started<1000*60*60*8))return null;
+  /* isian lama dari versi program sebelumnya: buang kalau gerakannya tidak cocok lagi */
+  const prog=PROGRAM[d.workout]||[];
+  if(!d.sets||prog.some(ex=>!Array.isArray(d.sets[ex.id])||d.sets[ex.id].length!==ex.sets))return null;
+  return d;
+}
+function saveDraft(){lsSet("gymlog-draft",draft)}
+
+/* ---------- render ---------- */
+let lastDay=null;
+function render(){
+  /* lewat tengah malam tanpa reload: centang harian ikut berganti hari */
+  const dk=dateKey();if(lastDay&&dk!==lastDay){habitDone=lsGet("gymlog-habits-"+dk)||[];mealDone=lsGet("gymlog-meals-"+dk)||[];if(draft&&draft.workout!==WDAY[new Date().getDay()])draft=null}lastDay=dk;
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===tab)));
+  const sync=$("#sync");
+  sync.textContent=mode==="db"?"Tersimpan otomatis di akunmu":mode==="local"?"Tersimpan di browser ini":"Memuat data…";
+  if(mode==="local")setSyncLabel();
+  const draw=()=>{if(tab==="hari")renderToday();else if(tab==="makan")renderMeals();else if(tab==="riwayat")renderHistory();else if(tab==="target")renderTarget();else renderProgram()};
+  try{draw()}catch(err){
+    console.error(err);
+    /* coba sekali lagi tanpa isian sementara yang mungkin rusak */
+    draft=null;try{localStorage.removeItem("gymlog-draft")}catch(_){}
+    try{draw()}catch(err2){console.error(err2);$("#view").innerHTML=`<div class="notice safe-card" style="margin-top:16px">Ada bagian yang gagal dimuat. Tutup tab ini lalu buka lagi. Kalau masih terjadi, kabari Claude.</div>`}
+  }
+}
+
+/* pemanasan & pendinginan */
+const PREP={
+  warm:{
+    upper:[["Treadmill atau sepeda statis","5 menit dengan tempo santai sampai badan terasa hangat."],["Putar lengan","10 kali ke depan dan 10 kali ke belakang, mulai kecil lalu makin besar."],["Cable face pull ringan","2 set × 15 dengan beban sangat ringan untuk membangunkan bahu belakang."],["Incline push-up","1 set × 10, tangan bertumpu di bench."],["Set pemanasan gerakan pertama","1 set × 10 dengan sekitar separuh beban kerja."]],
+    leg:[["Treadmill atau sepeda statis","5 menit dengan tempo santai sampai badan terasa hangat."],["Ayun kaki","10 kali depan-belakang dan 10 kali samping, setiap kaki."],["Putar pinggul","10 putaran ke kanan dan 10 ke kiri."],["Squat tanpa beban","1 set × 15, turun pelan sampai paha sejajar lantai."],["Set pemanasan squat","Bar kosong × 10, lalu separuh beban kerja × 6."]],
+    mix:[["Treadmill atau sepeda statis","5 menit dengan tempo santai sampai badan terasa hangat."],["Putar lengan","10 kali ke depan dan 10 kali ke belakang, mulai kecil lalu makin besar."],["Ayun kaki","10 kali depan-belakang dan 10 kali samping, setiap kaki."],["Squat tanpa beban","1 set × 15, turun pelan sampai paha sejajar lantai."],["Set pemanasan gerakan pertama","1 set × 10 dengan sekitar separuh beban kerja."]]
+  },
+  cool:{
+    upper:[["Jalan pelan","3 menit di treadmill supaya napas kembali normal."],["Stretch dada","Tangan di tiang atau pintu, putar badan menjauh. 30 detik setiap sisi."],["Stretch bahu","Tarik lengan menyilang di depan dada. 30 detik setiap sisi."],["Stretch triceps","Tangan ke punggung lewat atas kepala, dorong siku pelan. 30 detik setiap sisi."],["Stretch punggung","Pegang tiang setinggi pinggang, dorong pinggul ke belakang. 30 detik."],["Angkat kaki ke dinding","Berbaring, kaki lurus bersandar ke dinding 5–10 menit. Membantu peredaran darah kaki dan mengurangi pegal."]],
+    leg:[["Jalan pelan","3 menit di treadmill supaya napas kembali normal."],["Stretch paha depan","Berdiri, tarik tumit ke bokong. 30 detik setiap kaki."],["Stretch paha belakang","Tumit di bench rendah, condong ke depan dengan punggung lurus. 30 detik setiap kaki."],["Stretch betis","Tangan di dinding, kaki belakang lurus dan tumit menempel lantai. 30 detik setiap kaki."],["Stretch pinggul","Posisi lunge, lutut belakang di lantai, dorong pinggul ke depan. 30 detik setiap sisi."],["Angkat kaki ke dinding","Berbaring, kaki lurus bersandar ke dinding 5–10 menit. Membantu peredaran darah kaki dan mengurangi pegal."]],
+    mix:[["Jalan pelan","3 menit di treadmill supaya napas kembali normal."],["Stretch paha depan","Berdiri, tarik tumit ke bokong. 30 detik setiap kaki."],["Stretch paha belakang","Tumit di bench rendah, condong ke depan dengan punggung lurus. 30 detik setiap kaki."],["Stretch triceps","Tangan ke punggung lewat atas kepala, dorong siku pelan. 30 detik setiap sisi."],["Angkat kaki ke dinding","Berbaring, kaki lurus bersandar ke dinding 5–10 menit. Membantu peredaran darah kaki dan mengurangi pegal."]]
+  }
+};
+
+const PREPDEMO={warm:{upper:["tread","armcircle","facepull","inpushup","FIRST"],leg:["tread","legswing","hipcircle","bwsquat","squat"],mix:["tread","armcircle","legswing","bwsquat","FIRST"]},cool:{upper:["tread","chestst","shoulderst","tricepst","backst","legsup"],leg:["tread","quadst","hamst","calfst","hipst","legsup"],mix:["tread","quadst","hamst","tricepst","legsup"]}};
+
+/* ---------- jadwal tidur & harian ---------- */
+const DAY_PLAN=[["04.15","Bangun","Langsung minum 2 gelas air putih."],["04.30","Sholat Subuh","Lalu minum ½ takaran Wegen (hanya di hari latihan)."],["04.45","Gym","Pemanasan, latihan, lalu pendinginan. Selesai sekitar 06.15."],["07.00","Sarapan","3 telur rebus + 1 pisang."],["12.30","Makan siang","Setelah makan, jalan kaki 10 menit."],["14.00","Batas kopi atau teh","Setelah jam ini hindari kafein supaya tidur malam tidak terganggu."],["16.00","Cemilan","1 pisang."],["19.00","Makan malam","Makan berat terakhir hari ini."],["20.30","Siap-siap tidur","Angkat kaki ke dinding 5–10 menit, siapkan baju gym dan Wegen untuk besok."],["20.45","Jauhkan HP","Lampu diredupkan, HP ditaruh jauh dari kasur."],["21.15","Tidur","7 jam tidur sampai 04.15."]];
+function sleepInfo(){
+  const tom=(new Date().getDay()+1)%7,next=WDAY[tom];
+  return next?{time:"21.15",text:`Besok ${esc(WL[next])}. Tidur jam 21.15 supaya dapat 7 jam sebelum bangun 04.15.`}
+    :{time:"22.00",text:"Besok hari istirahat, boleh tidur sedikit lebih malam. Tetap bangun Subuh supaya jam tidur tidak berantakan. Kalau mengantuk, tidur siang maksimal 20 menit."};
+}
+function sleepCard(){
+  const si=sleepInfo();
+  return `<details class="ex sleep" style="margin-top:12px"><summary><span><span class="label">Malam ini</span><b>Tidur jam ${si.time}</b></span><span class="hint">Lihat jadwal harian</span></summary>
+  <p class="hint" style="margin-top:8px">${si.text}</p>${dayPlanTable()}</details>`;
+}
+function dayPlanTable(){
+  return `<table class="shop plan" style="margin-top:8px">${DAY_PLAN.map(r=>`<tr><td><b>${r[0]}</b></td><td><b>${esc(r[1])}</b><br><small class="hint">${esc(r[2])}</small></td></tr>`).join("")}</table>`;
+}
+
+/* ---------- kebiasaan harian ---------- */
+const HABITS=[["Minum air 2,5–3 liter","Sekitar 10–12 gelas, lebih banyak di hari latihan."],["8.000 langkah","Di luar gym. Cek di aplikasi langkah HP."],["Tidur minimal 7 jam","Kurang tidur bikin lapar dan lemak perut susah turun."],["Tanpa minuman manis","Air putih, teh tawar, atau kopi hitam saja."],["Angkat kaki ke dinding 5–10 menit","Setelah latihan atau sebelum tidur, supaya kaki tidak pegal."]];
+let habitDone=[];let habitChain=Promise.resolve();
+function habitCard(){
+  return `<article class="ex prep" style="margin-top:12px"><div class="ex-head"><h3>Kebiasaan hari ini</h3><span class="target">${habitDone.length}/${HABITS.length}</span></div><div class="hint">Hasil bakar lemak paling banyak ditentukan di luar gym.</div>
+  <ul class="prep-list">${HABITS.map((h,i)=>`<li><button type="button" class="prep-item" data-habit="${i}" aria-pressed="${habitDone.includes(i)}"><span class="pc">${habitDone.includes(i)?"✓":""}</span><span><b>${esc(h[0])}</b><small>${esc(h[1])}</small></span></button></li>`).join("")}</ul></article>`;
+}
+function saveHabits(){
+  const date=dateKey(),done=[...habitDone];
+  if(mode==="db"&&col){habitChain=habitChain.then(()=>col.doc("h-"+date).set({kind:"habits",date,done})).catch(()=>toast("Gagal menyimpan kebiasaan."))}
+  else lsSet("gymlog-habits-"+date,done);
+}
+function prepKind(w){return w==="LG"||w==="LA"||w==="LB"?"leg":w==="AU"?"mix":"upper"}
+function prepCard(type,w){
+  const items=PREP[type][prepKind(w)],done=(draft[type]||[]);
+  const title=type==="warm"?"Pemanasan · ±10 menit":"Pendinginan · ±12 menit";
+  const sub=type==="warm"?"Lakukan sebelum gerakan pertama supaya otot dan sendi siap.":"Lakukan setelah gerakan terakhir supaya otot tidak kaku besok.";
+  return `<article class="ex prep ${type}"><div class="ex-head"><h3>${title}</h3><span class="target">${done.length}/${items.length}</span></div><div class="hint">${sub}</div>
+  <ul class="prep-list">${items.map((it,i)=>{let id=PREPDEMO[type][prepKind(w)][i];if(id==="FIRST")id=PROGRAM[w][0].id;return `<li class="prep-row"><button type="button" class="demo sm" data-demo="${id}" aria-label="Lihat gerakan ${esc(it[0])}"><canvas width="96" height="96" data-anim="${id}"></canvas></button><button type="button" class="prep-item" data-prep="${type}" data-i="${i}" aria-pressed="${done.includes(i)}"><span class="pc">${done.includes(i)?"✓":""}</span><span><b>${esc(it[0])}</b><small>${esc(it[1])}</small></span></button></li>`}).join("")}</ul></article>`;
+}
+function renderToday(){
+  const dow=new Date().getDay(),today=WDAY[dow];
+  const weekStrip=`<div class="week">${[1,2,3,4,5,6,0].map(i=>`<div class="${TRAIN_DAYS.includes(i)?"train":""} ${i===dow?"today":""}">${DAYS[i]}</div>`).join("")}</div>`;
+  if(!today){
+    let n=1;while(!WDAY[(dow+n)%7])n++;const nd=(dow+n)%7;
+    const full=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+    $("#view").innerHTML=`<div class="hero"><div><div class="label">${esc(todayStr())}</div><div class="big">Hari istirahat</div><div class="hint">Otot tumbuh saat istirahat. Tetap makan cukup dan tidur 7–9 jam.</div></div></div>${weekStrip}
+    <div class="ex" style="margin-top:16px"><h3 style="font-size:22px">Latihan berikutnya</h3><p class="hint" style="font-size:15px">${n===1?"Besok":esc(full[nd])}: <b>${esc(WL[WDAY[nd]])}</b> · ${esc(WSUB[WDAY[nd]])}</p></div><div class="notice" style="margin-top:12px">Jadwal tidur dan kebiasaan hari ini ada di tab <b>Harian</b>.</div>`+backupBanner();
+    return;
+  }
+  if(!draft||draft.workout!==today){draft=loadDraft()||newDraft(today);}
+  const w=draft.workout;
+  let h=backupBanner()+`<div class="hero"><div><div class="label">${esc(todayStr())}</div><div class="big">${esc(WL[w]||w)}</div><div class="hint">${esc(WSUB[w]||"")}</div></div></div>
+  ${weekStrip}`;
+  h+=`<div class="notice">Ketuk gambar untuk lihat cara gerakan. Isi beban kalau mau dicatat, lalu ketuk nomor set setiap kali satu set selesai.</div>`;
+  if(PROGRAM[w].some(e=>e.lower))h+=`<div class="notice safe-card"><b>Keamanan kaki hari ini</b><br>Pakai stocking kompresi saat latihan kalau punya. Berhenti dan periksa ke dokter hari itu juga kalau satu betis tiba-tiba bengkak, nyeri, terasa panas, atau kemerahan.</div>`;
+  h+=`<div class="list">`+prepCard("warm",w);
+  for(const ex of PROGRAM[w]){
+    const s=suggest(ex,lastFor(ex.id));
+    h+=`<article class="ex"><div class="ex-title"><button type="button" class="demo" data-demo="${ex.id}" aria-label="Lihat cara gerakan ${esc(ex.name)}"><canvas width="120" height="120" data-anim="${ex.id}"></canvas></button>
+    <div><h3 style="font-size:22px;font-weight:600">${esc(ex.name)}</h3><span class="target">${ex.sets} × ${rng(ex)} ${ex.unit}</span></div></div>
+    <div class="hint ${s.up?"up":""}">${esc(s.text)}</div>${ex.lower?`<div class="hint safe">Hembuskan napas saat mendorong, jangan ditahan. Sisakan 1–2 rep, jangan sampai benar-benar gagal.</div>`:""}<div class="sets">`;
+    h+=`<div class="simple">`;
+    if(!ex.bodyweight)h+=`<label class="kgbox"><span>Beban</span><input id="kg-${ex.id}" inputmode="decimal" placeholder="—" value="${esc(draft.sets[ex.id][0].kg)}" data-ex="${ex.id}" data-k="kgall" aria-label="Beban ${esc(ex.name)} dalam kg"><span>kg</span></label>`;
+    h+=`<div class="dots" role="group" aria-label="Set ${esc(ex.name)}">${draft.sets[ex.id].map((st,i)=>`<button type="button" class="dot" data-tick="${ex.id}" data-i="${i}" aria-pressed="${st.done}" aria-label="Set ${i+1} selesai">${st.done?"✓":i+1}</button>`).join("")}</div></div>`;
+    h+=`</div></article>`;
+  }
+  const doneCount=Object.values(draft.sets).flat().filter(x=>x.done).length;
+  h+=prepCard("cool",w)+`</div><button class="primary" id="finish" type="button" ${doneCount?"":"disabled"}>Selesai &amp; simpan</button>
+  <div class="row" style="justify-content:center;margin-top:12px"><button class="ghost" type="button" id="resetDraft">Kosongkan isian</button></div>`;
+  $("#view").innerHTML=h;
+}
+
+function renderHistory(){
+  const s=sorted();
+  let h="";
+  if(!s.length){
+    h=`<div class="empty"><h2 style="font-size:24px">Belum ada latihan tersimpan</h2><p>Isi beban dan rep di tab <b>Latihan</b>, centang setiap set, lalu tekan <b>Selesai &amp; simpan</b>. Riwayat dan grafik progresmu muncul di sini.</p></div>`;
+    $("#view").innerHTML=h;return;
+  }
+  const exWithData=ALL_EX.filter(e=>!e.bodyweight&&s.some(x=>x.sets&&x.sets[e.id]&&x.sets[e.id].some(y=>+y.kg)));
+  if(exWithData.length){
+    if(!exWithData.find(e=>e.id===chartEx))chartEx=exWithData[0].id;
+    h+=`<div class="chart"><div class="row" style="justify-content:space-between"><h2 style="font-size:20px">Beban terberat</h2>
+    <select id="chartSel" aria-label="Pilih gerakan">${exWithData.map(e=>`<option value="${e.id}" ${e.id===chartEx?"selected":""}>${esc(e.name)}</option>`).join("")}</select></div>${chartSvg(chartEx)}</div>`;
+  }
+  h+=`<div class="list">`;
+  for(const x of s){
+    const ex=PROGRAM[x.workout]||[];
+    const d=new Date(x.ts);
+    h+=`<article class="sess"><div class="sess-head"><div class="row"><span class="badge">${esc(WL[x.workout]||x.workout)}</span><b>${esc(d.toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short",year:"numeric"}))}</b></div>
+    ${pendingDelete===x.id?`<div class="row"><button class="ghost danger" type="button" data-del-yes="${x.id}">Hapus</button><button class="ghost" type="button" data-del-no="1">Batal</button></div>`:`<button class="ghost" type="button" data-del="${x.id}">Hapus</button>`}</div><table>`;
+    for(const e of ex){
+      const r=(x.sets&&x.sets[e.id]||[]).filter(y=>y.reps);
+      if(!r.length)continue;
+      h+=`<tr><td>${esc(e.name)}</td><td>${e.bodyweight?"":(Math.max(...r.map(y=>+y.kg||0))||"–")+" kg · "}${r.length} set</td></tr>`;
+    }
+    h+=`</table></article>`;
+  }
+  h+=`</div>`;
+  $("#view").innerHTML=h;
+}
+
+function chartSvg(id){
+  const pts=sorted().reverse().map(x=>{const r=(x.sets&&x.sets[id]||[]).filter(y=>+y.kg);return r.length?{ts:x.ts,kg:Math.max(...r.map(y=>+y.kg))}:null}).filter(Boolean);
+  const W=560,H=200,L=40,R=16,T=16,B=28;
+  if(pts.length<2)return `<p class="hint">Grafik muncul setelah dua sesi gerakan ini tersimpan. Sekarang: ${pts.length?pts[0].kg+" kg":"belum ada"}.</p>`;
+  let lo=Math.min(...pts.map(p=>p.kg)),hi=Math.max(...pts.map(p=>p.kg));
+  const step=hi-lo>20?10:5;lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;if(hi===lo)hi=lo+step;
+  const x=i=>L+(W-L-R)*i/(pts.length-1);const y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  let g="";for(let v=lo;v<=hi;v+=step){g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="12" fill="var(--muted)">${v}</text>`}
+  const line=pts.map((p,i)=>`${x(i)},${y(p.kg)}`).join(" ");
+  const area=`${x(0)},${H-B} ${line} ${x(pts.length-1)},${H-B}`;
+  const fmt=t=>new Date(t).toLocaleDateString("id-ID",{day:"numeric",month:"short"});
+  const last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafik beban terberat">${g}
+  <polygon points="${area}" fill="var(--accent)" opacity=".12"/><polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+  <circle cx="${x(pts.length-1)}" cy="${y(last.kg)}" r="5" fill="var(--accent)"/>
+  <text x="${L}" y="${H-8}" font-size="12" fill="var(--muted)">${fmt(pts[0].ts)}</text><text x="${W-R}" y="${H-8}" font-size="12" text-anchor="end" fill="var(--muted)">${fmt(last.ts)} · ${last.kg} kg</text></svg>`;
+}
+
+function renderMeals(){
+  const M=MEALS[tier];
+  const sum=k=>M.items.reduce((a,b)=>a+b[k],0);
+  const ate=M.items.filter(i=>mealDone.includes(i.id));
+  const kcalAte=ate.reduce((a,b)=>a+b.kcal,0),protAte=ate.reduce((a,b)=>a+b.protein,0);
+  let h=`<div class="hero"><div><div class="label">${esc(todayStr())}</div><div class="big">Harian</div><div class="hint">Tidur, kebiasaan, dan makan hari ini</div></div></div>`+sleepCard()+habitCard()+`
+  <div class="hero" style="margin-top:28px"><div><div class="label">Menu bakar lemak anak kos · per hari</div><div class="big">${rp(sum("price"))}</div></div>
+  <span class="badge" style="align-self:flex-start;margin-top:6px">${esc(M.label)}</span></div>
+  <div class="notice">${esc(M.note)} Total ±${sum("kcal").toLocaleString("id-ID")} kkal dan ±${sum("protein")} g protein. Harga perkiraan pasar dan warteg Jabodetabek.</div>
+  <div class="ex" style="margin-top:16px"><div class="ex-head"><h3>Makan hari ini</h3><span class="target">${kcalAte.toLocaleString("id-ID")} / ${sum("kcal").toLocaleString("id-ID")} kkal · ${protAte} g protein</span></div>
+  <div class="meter"><div style="width:${Math.round(kcalAte/sum("kcal")*100)}%"></div></div></div>
+  <div class="list">`;
+  for(const i of M.items){
+    const on=mealDone.includes(i.id);
+    h+=`<article class="ex"><div class="meal-row"><div><div class="meal-time">${esc(i.time)}</div><h3 style="font-size:20px">${esc(i.name)}</h3><div class="hint">${esc(i.detail)}</div>
+    <div class="chips"><span>${rp(i.price)}</span><span>${i.kcal} kkal</span><span>${i.protein} g protein</span></div></div>
+    <button type="button" class="eat" data-meal="${i.id}" aria-pressed="${on}">${on?"✓ Sudah":"Sudah makan"}</button></div></article>`;
+  }
+  h+=`</div><div class="rules"><section><h2>Belanja mingguan</h2><table class="shop">${SHOP.map(r=>`<tr><td>${esc(r[0])}</td><td>${r[1]==="—"?"sudah ada":"Rp"+r[1]}</td></tr>`).join("")}</table>
+  <p class="hint">Stok kos untuk sarapan dan cemilan. Nasi dan lauk utama beli matang di warteg.</p></section>
+  <section><h2>Tips bakar lemak perut</h2><ul>
+  <li>Target harian sekitar 2.000 kkal dan minimal 100 g protein. Menu di atas sudah mendekati angka itu.</li>
+  <li>Wegen adalah susu penggemuk (450 kkal per takaran). Pakai ½ takaran setelah Subuh sebelum gym saja, dan lewati di hari istirahat. Setelah habis, lebih cocok beli susu biasa atau whey protein.</li>
+  <li>Ganti minuman manis (es teh manis, kopi susu gula aren, minuman boba) dengan air putih atau teh tawar. Ini cara paling mudah memangkas kalori.</li>
+  <li>Kurangi gorengan tepung, kerupuk, dan kuah santan. Pilih lauk bakar, rebus, atau pecel.</li>
+  <li>Kurangi garam dan mi instan. Selain lemak, pipi tembem sering diperparah tubuh yang menahan air.</li>
+  <li>Telur rebus maksimal 3 butir per hari, cukup di sarapan. Rebus untuk hari itu saja kalau tidak ada kulkas.</li></ul></section></div>`;
+  $("#view").innerHTML=h;
+}
+function saveMeals(){
+  const date=dateKey(),done=[...mealDone];
+  if(mode==="db"&&col){mealChain=mealChain.then(()=>col.doc("m-"+date).set({kind:"meals",date,done})).catch(()=>toast("Gagal menyimpan centang makan."))}
+  else lsSet("gymlog-meals-"+date,done);
+}
+
+function renderProgram(){
+  const full=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"],dow=new Date().getDay();
+  const restTxt=sec=>sec>=60?(sec%60?(sec/60).toString().replace(".",",")+" mnt":(sec/60)+" mnt"):sec+" dtk";
+  const day=d=>{const k=WDAY[d],now=d===dow?' style="border-color:var(--accent);border-width:2px"':"";
+    if(!k)return `<section${now}><h2>${full[d]} · Istirahat</h2><p class="hint">Tidak ada latihan. Fokus makan cukup dan tidur 7–9 jam.</p></section>`;
+    const kind={leg:"kaki",mix:"lengan dan kaki",upper:"badan atas"}[prepKind(k)];
+    return `<section${now}><h2>${full[d]} · ${esc(WL[k])}</h2><p class="hint">${esc(WSUB[k])}${d===dow?" · <b>hari ini</b>":""}</p>
+    <table class="shop"><tr><td colspan="2"><i>Pemanasan ${kind} ±10 menit</i></td></tr>
+    ${PROGRAM[k].map(e=>`<tr><td>${esc(e.name)}</td><td>${e.sets} × ${rng(e)} ${e.unit}${e.rest?`<br><small class="hint">istirahat ${restTxt(e.rest)}</small>`:""}</td></tr>`).join("")}
+    <tr><td colspan="2"><i>Pendinginan ${kind} ±12 menit</i></td></tr></table></section>`};
+  $("#view").innerHTML=`<div class="rules">
+  <section><h2>Jadwal mingguan</h2><ul><li>Senin: Push · Selasa: Pull · Rabu: Leg day · Jumat: V-Taper · Sabtu: Arms + Legs.</li><li>Kamis dan Minggu istirahat total.</li><li>Tab Latihan otomatis membuka latihan sesuai hari dan tidak bisa diganti. Kalau bolos, lanjutkan saja jadwal hari berikutnya.</li></ul></section>
+  <section><h2>Jadwal harian dan tidur</h2><p class="hint">Untuk gym setelah Subuh. Malam sebelum hari istirahat (Rabu dan Sabtu) boleh tidur jam 22.00, tapi tetap bangun Subuh.</p>${dayPlanTable()}
+  <ul style="margin-top:8px"><li>Kamar gelap dan sejuk, HP jauh dari kasur.</li><li>Jangan makan berat 2 jam sebelum tidur.</li><li>Jam bangun sama setiap hari, termasuk hari istirahat. Ini kunci supaya bangun Subuh terasa mudah.</li></ul></section>
+  ${[1,2,3,4,5,6,0].map(day).join("")}
+  <section><h2>Cara pakai</h2><ul>
+  <li>Mulai dari daftar <b>Pemanasan</b>, lalu latihan utama, dan tutup dengan <b>Pendinginan</b>. Ketuk gambar untuk melihat cara gerakan.</li>
+  <li>Isi kotak <b>Beban</b> sekali per gerakan, lalu ketuk <b>nomor set</b> setiap kali satu set selesai. Timer istirahat langsung berjalan.</li>
+  <li>Tekan <b>Selesai &amp; simpan</b> setelah latihan. Hasilnya muncul di tab Riwayat.</li></ul></section>
+  <section><h2>Aturan main</h2><ul>
+  <li>Target rep adalah angka pasti. Pilih beban yang sanggup kamu angkat sebanyak itu dengan teknik benar.</li>
+  <li>Kalau semua set sudah lancar mencapai target rep, naikkan beban di latihan berikutnya: +2,5 kg untuk mesin dan barbel badan atas, +5 kg untuk kaki, +2 kg per tangan untuk dumbbell.</li>
+  <li>Dua minggu pertama pakai beban ringan dan fokus teknik.</li>
+  <li>Kaki dilatih 2 kali seminggu (Rabu dan Sabtu) dan perut 3 kali (Senin, Rabu, Jumat).</li>
+  <li>Setiap minggu ke-8 adalah minggu ringan (deload): kurangi 1 set di setiap gerakan dan pakai sekitar 70% beban biasa, supaya sendi dan otot pulih.</li>
+  <li>Di gerakan kaki, hembuskan napas saat mendorong dan jangan menahan napas. Selesai latihan, angkat kaki ke dinding 5–10 menit.</li>
+  <li>Makan dalam surplus kalori dan tidur 7–9 jam. Tanpa itu, otot sulit tumbuh.</li></ul></section></div>`;
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.tab){tab=t.dataset.tab;pendingDelete=null;try{history.replaceState(null,"","#"+tab)}catch(_){};render();window.scrollTo(0,0);return}
+  if(t.dataset.w){if(t.dataset.w!==draft.workout){draft=newDraft(t.dataset.w);saveDraft();render()}return}
+  if(t.dataset.tick){
+    const ex=(PROGRAM[draft.workout]||[]).find(x=>x.id===t.dataset.tick)||ALL_EX.find(x=>x.id===t.dataset.tick);const st=draft.sets[ex.id][+t.dataset.i];
+    if(!st.done&&!st.reps){const inp=document.getElementById("reps-"+ex.id+"-"+t.dataset.i);st.reps=String(ex.max>15?ex.min:ex.max);if(inp)inp.value=st.reps}
+    st.done=!st.done;t.setAttribute("aria-pressed",String(st.done));if(t.classList.contains("dot"))t.textContent=st.done?"✓":String(+t.dataset.i+1);saveDraft();
+    $("#finish").disabled=!Object.values(draft.sets).flat().some(x=>x.done);
+    if(st.done&&ex.rest)startTimer(ex.rest,ex.name);return;
+  }
+  if(t.id==="syncNowBtn"){syncNow().then(()=>{toast(SYNC.err||"Sudah tersinkron");render()});return}
+  if(t.id==="syncCopy"){const tok=syncToken();try{navigator.clipboard.writeText(tok).then(()=>toast("Token disalin"),()=>toast("Gagal menyalin"))}catch(_){toast("Gagal menyalin")}return}
+  if(t.id==="syncOff"){try{localStorage.removeItem("gymlog-sync-token")}catch(_){}toast("Sinkron diputus di perangkat ini. Data tetap ada.");render();return}
+  if(t.id==="pEdit"){editingProfile=true;render();return}
+  if(t.id==="pCancel"){editingProfile=false;render();return}
+  if(t.id==="photoDone"){markPhoto();return}
+  if(t.id==="bkDown"){downloadBackup();return}
+  if(t.dataset.habit!==undefined){const i=+t.dataset.habit;habitDone=habitDone.includes(i)?habitDone.filter(x=>x!==i):[...habitDone,i];saveHabits();render();return}
+  if(t.dataset.prep){const k=t.dataset.prep,i=+t.dataset.i;draft[k]=draft[k]||[];draft[k]=draft[k].includes(i)?draft[k].filter(x=>x!==i):[...draft[k],i];saveDraft();render();return}
+  if(t.dataset.demo){showDemo(t.dataset.demo);return}
+  if(t.id==="mClose"){hideDemo();return}
+  if(t.dataset.tier){tier=t.dataset.tier;lsSet("gymlog-tier",tier);render();return}
+  if(t.dataset.meal){const id=t.dataset.meal;mealDone=mealDone.includes(id)?mealDone.filter(x=>x!==id):[...mealDone,id];saveMeals();render();return}
+  if(t.id==="finish"){finish();return}
+  if(t.id==="resetDraft"){draft=newDraft(draft.workout);saveDraft();render();toast("Isian dikosongkan");return}
+  if(t.dataset.del){pendingDelete=t.dataset.del;render();return}
+  if(t.dataset.delNo){pendingDelete=null;render();return}
+  if(t.dataset.delYes){removeSession(t.dataset.delYes);return}
+  if(t.id==="tStop"){stopTimer();return}
+  if(t.id==="tPlus"){timer.end+=15000;tick();return}
+  if(t.id==="tMinus"){timer.end-=15000;tick();return}
+});
+document.addEventListener("input",e=>{
+  const i=e.target;if(!i.dataset||!i.dataset.ex)return;
+  const v=i.value.replace(",",".").replace(/[^0-9.]/g,"");
+  if(i.dataset.k==="kgall")draft.sets[i.dataset.ex].forEach(x=>x.kg=v);else draft.sets[i.dataset.ex][+i.dataset.i][i.dataset.k]=v;
+  saveDraft();
+});
+document.addEventListener("change",e=>{if(e.target.id==="chartSel"){chartEx=e.target.value;render()}});
+
+/* ---------- timer ---------- */
+const timer={end:0,total:0,h:null,beeped:false};
+let audioCtx=null;
+function startTimer(sec,name){
+  try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)()}catch(_){}
+  timer.total=sec*1000;timer.end=Date.now()+timer.total;timer.beeped=false;
+  $("#timerL").textContent="Istirahat setelah "+name;$("#timer").hidden=false;$("#timer").classList.remove("done");
+  clearInterval(timer.h);timer.h=setInterval(tick,250);tick();
+}
+function tick(){
+  const left=Math.max(0,timer.end-Date.now());const s=Math.ceil(left/1000);
+  $("#timerT").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+  $("#timerBar").style.width=(timer.total?Math.min(100,left/timer.total*100):0)+"%";
+  if(left<=0&&!timer.beeped){timer.beeped=true;$("#timer").classList.add("done");$("#timerL").textContent="Waktunya set berikutnya";beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(_){}}
+}
+function stopTimer(){clearInterval(timer.h);$("#timer").hidden=true}
+function beep(){try{if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=880;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(.2,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+.6);o.start();o.stop(audioCtx.currentTime+.6)}catch(_){}}
+
+/* ---------- storage ---------- */
+async function finish(){
+  const sets={};
+  for(const ex of PROGRAM[draft.workout])sets[ex.id]=draft.sets[ex.id].filter(x=>x.done).map(x=>({kg:ex.bodyweight?0:(+x.kg||0),reps:+x.reps||0}));
+  const id="s"+Date.now().toString(36);
+  const sess={workout:draft.workout,ts:Date.now(),sets};
+  $("#finish").disabled=true;
+  try{
+    if(mode==="db"&&col){await col.doc(id).set(sess)}
+    else{sessions.push({id,...sess});lsSet("gymlog-sessions",sessions)}
+  }catch(err){
+    $("#finish").disabled=false;
+    toast(err&&err.code==="quota_exceeded"?"Penyimpanan penuh. Hapus sesi lama dulu.":"Gagal menyimpan. Coba tekan lagi.");return;
+  }
+  if(mode!=="db")render();
+  try{localStorage.removeItem("gymlog-draft")}catch(_){}
+  stopTimer();
+  draft=null;
+  toast(WL[sess.workout]+" tersimpan. Berikutnya: "+WL[nextAfter(sess.workout)]);
+  tab="riwayat";render();window.scrollTo(0,0);
+}
+async function removeSession(id){
+  pendingDelete=null;
+  try{
+    if(mode==="db"&&col){await col.doc(id).delete()}
+    else{sessions=sessions.filter(s=>s.id!==id);lsSet("gymlog-deleted",[...new Set([...(lsGet("gymlog-deleted")||[]),id])]);lsSet("gymlog-sessions",sessions)}
+    toast("Sesi dihapus");
+  }catch(_){toast("Gagal menghapus. Coba lagi.")}
+  render();
+}
+
+/* ---------- sinkron antar perangkat lewat GitHub Gist privat ---------- */
+const GIST_FILE="gymlog-data.json";
+const SYNC={busy:false,timer:null,err:"",again:false};
+function syncToken(){try{return localStorage.getItem("gymlog-sync-token")||""}catch(_){return ""}}
+function syncOn(){return mode==="local"&&!!syncToken()}
+function ghFetch(path,opt={}){
+  return fetch("https://api.github.com"+path,{...opt,cache:"no-store",headers:{"Authorization":"Bearer "+syncToken(),"Accept":"application/vnd.github+json","Content-Type":"application/json"}}).then(async r=>{
+    if(r.status===401)throw new Error("Token tidak valid atau sudah kedaluwarsa.");
+    if(r.status===404)throw new Error("NOTFOUND");
+    if(!r.ok)throw new Error("GitHub menolak permintaan ("+r.status+").");
+    return r.json();
+  });
+}
+function collectState(){
+  const meta=lsGet("gymlog-meta")||{},keys={};
+  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&syncable(k))keys[k]={v:lsGet(k),u:meta[k]||0}}}catch(_){}
+  return {app:"gym-log",v:1,keys};
+}
+function mergeState(a,b){
+  const out={app:"gym-log",v:1,keys:{}},A=(a&&a.keys)||{},B=(b&&b.keys)||{};
+  const del=new Set([...((A["gymlog-deleted"]||{}).v||[]),...((B["gymlog-deleted"]||{}).v||[])]);
+  for(const k of new Set([...Object.keys(A),...Object.keys(B)])){
+    const x=A[k],y=B[k];
+    if(!x||!y){out.keys[k]=x||y;continue}
+    const u=Math.max(x.u||0,y.u||0);
+    if(k==="gymlog-sessions"){
+      const m={};for(const s of [...(x.v||[]),...(y.v||[])])if(s&&s.id)m[s.id]=s;
+      out.keys[k]={v:Object.values(m).filter(s=>!del.has(s.id)).sort((p,q)=>p.ts-q.ts),u};
+    }else if(k==="gymlog-weights"){
+      const m={};for(const w of [...(x.v||[]),...(y.v||[])])if(w&&w.date&&(!m[w.date]||(w.u||0)>=(m[w.date].u||0)))m[w.date]=w;
+      out.keys[k]={v:Object.values(m).sort((p,q)=>p.date<q.date?-1:1),u};
+    }else if(k==="gymlog-photos"||k==="gymlog-deleted"){
+      out.keys[k]={v:[...new Set([...(x.v||[]),...(y.v||[])])].sort(),u};
+    }else out.keys[k]=(x.u||0)>=(y.u||0)?x:y;
+  }
+  if(out.keys["gymlog-deleted"])out.keys["gymlog-deleted"].v=[...del];
+  return out;
+}
+function applyState(st){
+  const meta=lsGet("gymlog-meta")||{};
+  for(const k in st.keys){try{localStorage.setItem(k,JSON.stringify(st.keys[k].v))}catch(_){}meta[k]=st.keys[k].u||0}
+  try{localStorage.setItem("gymlog-meta",JSON.stringify(meta))}catch(_){}
+}
+async function findOrCreateGist(){
+  let id="";try{id=localStorage.getItem("gymlog-sync-gist")||""}catch(_){}
+  if(id){try{await ghFetch("/gists/"+id);return id}catch(e){if(e.message!=="NOTFOUND")throw e}}
+  const list=await ghFetch("/gists?per_page=100");
+  const hit=list.find(g=>g.files&&g.files[GIST_FILE]);
+  if(hit)id=hit.id;
+  else{const g=await ghFetch("/gists",{method:"POST",body:JSON.stringify({description:"Gym Log data (sinkron otomatis)",public:false,files:{[GIST_FILE]:{content:JSON.stringify(collectState())}}})});id=g.id}
+  try{localStorage.setItem("gymlog-sync-gist",id)}catch(_){}
+  return id;
+}
+async function syncNow(){
+  if(!syncOn())return;
+  if(SYNC.busy){SYNC.again=true;return}
+  SYNC.busy=true;SYNC.err="";setSyncLabel();
+  try{
+    const id=await findOrCreateGist();
+    const g=await ghFetch("/gists/"+id);
+    let remote=null;const f=g.files&&g.files[GIST_FILE];
+    if(f){let txt=f.content;if(f.truncated&&f.raw_url)txt=await fetch(f.raw_url,{cache:"no-store"}).then(r=>r.text());try{remote=JSON.parse(txt)}catch(_){}}
+    const local=collectState(),merged=mergeState(local,remote);
+    const mergedTxt=JSON.stringify(merged);
+    if(mergedTxt!==JSON.stringify(local)){applyState(merged);reloadLocal()}
+    if(!remote||mergedTxt!==JSON.stringify(remote))await ghFetch("/gists/"+id,{method:"PATCH",body:JSON.stringify({files:{[GIST_FILE]:{content:mergedTxt}}})});
+    try{localStorage.setItem("gymlog-sync-last",String(Date.now()))}catch(_){}
+  }catch(e){SYNC.err=e.message||"Tidak bisa terhubung ke GitHub."}
+  SYNC.busy=false;setSyncLabel();
+  if(SYNC.again){SYNC.again=false;scheduleSync(800)}
+}
+function scheduleSync(ms){if(!syncOn())return;clearTimeout(SYNC.timer);SYNC.timer=setTimeout(syncNow,ms||1500)}
+function reloadLocal(){
+  sessions=lsGet("gymlog-sessions")||[];weights=lsGet("gymlog-weights")||[];photos=lsGet("gymlog-photos")||[];profile=lsGet("gymlog-profile");
+  habitDone=lsGet("gymlog-habits-"+dateKey())||[];mealDone=lsGet("gymlog-meals-"+dateKey())||[];
+  const a=document.activeElement;if(a&&a.tagName==="INPUT")return;render();
+}
+function setSyncLabel(){
+  const el=$("#sync");if(!el||mode!=="local")return;
+  if(!syncToken()){el.textContent="Tersimpan di browser ini";return}
+  if(SYNC.busy){el.textContent="Menyinkronkan…";return}
+  if(SYNC.err){el.textContent="Sinkron gagal · coba lagi";return}
+  let t=0;try{t=+localStorage.getItem("gymlog-sync-last")||0}catch(_){}
+  el.textContent=t?"Tersinkron "+new Date(t).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}):"Sinkron aktif";
+}
+function syncSection(){
+  if(mode==="db")return `<section><h2>Sinkron antar perangkat</h2><p class="hint">Versi Claude ini tersimpan di akun Claude-mu. Untuk sinkron Safari, Chrome, dan Home Screen, pakai link <b>emsukmaji.github.io/gym-log</b> lalu aktifkan sinkron di tab Target di sana.</p></section>`;
+  const tok=syncToken();
+  if(tok){let t=0;try{t=+localStorage.getItem("gymlog-sync-last")||0}catch(_){}
+    return `<section><h2>Sinkron antar perangkat</h2><p><b>Aktif.</b> ${t?`Terakhir tersinkron ${new Date(t).toLocaleString("id-ID",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.`:""} ${SYNC.err?`<br><span style="color:var(--warn)">${esc(SYNC.err)}</span>`:""}</p>
+    <p class="hint">Data disimpan di Gist privat di akun GitHub-mu dan otomatis disamakan setiap kali ada perubahan, saat aplikasi dibuka, dan setiap menit. Untuk perangkat lain, buka link yang sama lalu tempel token yang sama di sini.</p>
+    <div class="row" style="margin-top:8px"><button class="ghost" type="button" id="syncNowBtn" style="padding:10px 14px">Sinkron sekarang</button><button class="ghost" type="button" id="syncCopy" style="padding:10px 14px">Salin token</button><button class="ghost danger" type="button" id="syncOff" style="padding:10px 14px">Putuskan di perangkat ini</button></div></section>`}
+  return `<section class="safe-card"><h2>Sinkron antar perangkat</h2><p class="hint">Supaya progres sama di Safari, Chrome laptop, dan aplikasi Home Screen, sambungkan ke GitHub sekali di setiap perangkat.</p>
+  <ol style="margin:8px 0 0;padding-left:20px"><li>Buka <a href="https://github.com/settings/tokens/new?scopes=gist&description=Gym%20Log%20sync" target="_blank" rel="noopener">halaman buat token GitHub</a>.</li><li>Di <b>Expiration</b> pilih <b>No expiration</b>. Pastikan hanya <b>gist</b> yang dicentang.</li><li>Tekan <b>Generate token</b>, salin kodenya (diawali ghp_).</li><li>Tempel di bawah, lalu tekan <b>Sambungkan</b>.</li></ol>
+  <form id="syncForm" class="row" style="margin-top:10px"><input id="syncTok" type="password" autocomplete="off" placeholder="ghp_…" aria-label="Token GitHub" style="flex:1;min-width:0;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--chalk);color:var(--ink)"><button class="ghost" type="submit" style="padding:10px 14px">Sambungkan</button></form>
+  <p class="hint" style="margin-top:6px">Token ini hanya bisa mengakses Gist, bukan repo atau akunmu. Simpan juga di catatan HP supaya mudah ditempel di perangkat lain.</p></section>`;
+}
+document.addEventListener("submit",async e=>{
+  if(e.target.id!=="syncForm")return;e.preventDefault();
+  const tok=($("#syncTok").value||"").trim();if(!/^(ghp_|github_pat_)/.test(tok)){toast("Token harus diawali ghp_ atau github_pat_");return}
+  try{localStorage.setItem("gymlog-sync-token",tok)}catch(_){}
+  toast("Menyambungkan…");await syncNow();
+  if(SYNC.err){toast(SYNC.err);try{localStorage.removeItem("gymlog-sync-token")}catch(_){};render()}else{toast("Sinkron aktif. Data aman di GitHub.");render()}
+});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(lastDay&&dateKey()!==lastDay)render();scheduleSync(300)}});
+setInterval(()=>{if(document.visibilityState==="visible")syncNow()},60000);
+
+/* ---------- ringkasan progres, foto, backup ---------- */
+let photos=[];
+function progressSummary(){
+  const asc=[...weights].sort((a,b)=>a.date<b.date?-1:1);if(asc.length<2)return "";
+  const first=f=>asc.find(w=>w[f]),last=f=>[...asc].reverse().find(w=>w[f]);
+  const row=(f,label,good)=>{const a=first(f),b=last(f);if(!a||!b||a===b)return "";const d=Math.round((b[f]-a[f])*10)/10;const ok=good==="down"?d<0:d>0;
+    return `<tr><td>${label}</td><td style="color:${d===0?"var(--muted)":ok?"var(--good)":"var(--warn)"}">${d>0?"+":""}${String(d).replace(".",",")} ${f==="kg"?"kg":"cm"}</td></tr>`};
+  const rows=row("kg","Berat","down")+row("waist","Perut","down")+row("arm","Lengan","up")+row("thigh","Paha","up");
+  return rows?`<section><h2>Perubahan sejak awal</h2><table class="shop">${rows}</table><p class="hint">Hijau berarti ke arah target: perut dan berat turun, lengan dan paha naik.</p></section>`:"";
+}
+function photoSection(){
+  const last=photos.length?photos[photos.length-1]:null;
+  const due=last?new Date(new Date(last+"T12:00:00").getTime()+28*864e5):null;
+  const now=new Date(),overdue=!last||due<=now;
+  return `<section${overdue?' class="safe-card"':""}><h2>Foto progres</h2><p class="hint">Setiap 4 minggu: foto depan, samping, dan wajah. Tempat, cahaya, dan jam yang sama (pagi sebelum makan). Simpan di album khusus di galeri HP, tidak perlu diunggah ke sini.</p>
+  <p>${last?`Terakhir: <b>${fmtDate(last)}</b> · berikutnya: <b>${due.toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</b>`:"<b>Belum ada foto awal.</b> Ambil foto pertama sebelum mulai latihan."}</p>
+  <button class="ghost" type="button" id="photoDone" style="padding:10px 14px">Sudah foto hari ini</button></section>`;
+}
+async function markPhoto(){
+  const d=dateKey();if(photos.includes(d)){toast("Foto hari ini sudah tercatat");return}
+  photos=[...photos,d].sort();
+  try{if(mode==="db"&&col)await col.doc("photos").set({kind:"photos",dates:photos});else lsSet("gymlog-photos",photos);toast("Foto progres tercatat");render()}catch(_){toast("Gagal menyimpan. Coba lagi.")}
+}
+function backupSection(){
+  if(mode==="db")return `<section><h2>Keamanan data</h2><p class="hint">Di versi Claude, semua catatan tersimpan otomatis di akunmu dan ikut ke perangkat lain.</p>${backupButtons()}</section>`;
+  const lb=lsGet("gymlog-lastbackup");
+  return `<section class="${!lb||Date.now()-lb>7*864e5?"safe-card":""}"><h2>Backup data</h2><p class="hint">Catatan di halaman ini hanya tersimpan di browser HP ini. Kalau data browser dihapus atau ganti HP, catatan bisa hilang. Download backup seminggu sekali dan simpan di Google Drive atau WhatsApp ke diri sendiri.</p>
+  <p>${lb?`Backup terakhir: <b>${new Date(lb).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</b>`:"<b>Belum pernah backup.</b>"}</p>${backupButtons()}</section>`;
+}
+function backupButtons(){
+  return `<div class="row" style="margin-top:8px"><button class="ghost" type="button" id="bkDown" style="padding:10px 14px">Download backup</button>
+  <label class="ghost" style="padding:10px 14px;cursor:pointer">Pulihkan dari backup<input id="bkFile" type="file" accept="application/json,.json" hidden></label></div>`;
+}
+function collectBackup(){
+  const ls={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith("gymlog-")&&k!=="gymlog-draft")ls[k]=localStorage.getItem(k)}}catch(_){}
+  return {app:"gym-log",version:1,exported:new Date().toISOString(),sessions,weights,photos,ls};
+}
+async function downloadBackup(){
+  const data=JSON.stringify(collectBackup()),filename="gymlog-backup-"+dateKey()+".json";
+  if(window.claude&&window.claude.use){try{const dl=await claude.use("downloads");if(dl){await dl.save({filename,data});lsSet("gymlog-lastbackup",Date.now());toast("Backup disimpan.");render();return}}catch(_){toast("Backup dibatalkan.");return}}
+  try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}catch(_){}
+  lsSet("gymlog-lastbackup",Date.now());toast("Backup dibuat. Cek folder Download.");render();
+}
+async function restoreBackup(file){
+  try{
+    const d=JSON.parse(await file.text());if(d.app!=="gym-log")throw 0;
+    if(mode==="db"&&col){
+      for(const x of d.sessions||[]){const {id,...rest}=x;if(id)await col.doc(id).set(rest)}
+      for(const w of d.weights||[])await col.doc("w-"+w.date).set(w);
+      if((d.photos||[]).length)await col.doc("photos").set({kind:"photos",dates:d.photos});
+    }else{
+      for(const k in d.ls||{})try{localStorage.setItem(k,d.ls[k])}catch(_){}
+      if(d.sessions)lsSet("gymlog-sessions",d.sessions);if(d.weights)lsSet("gymlog-weights",d.weights);if(d.photos)lsSet("gymlog-photos",d.photos);
+      useLocal();
+    }
+    toast("Data berhasil dipulihkan");
+  }catch(_){toast("File backup tidak bisa dibaca. Pastikan file gymlog-backup yang benar.")}
+}
+function backupBanner(){
+  if(mode!=="local"||syncToken())return "";
+  const lb=lsGet("gymlog-lastbackup");if(!sessions.length&&!weights.length)return "";
+  if(lb&&Date.now()-lb<7*864e5)return "";
+  return `<div class="notice safe-card" style="margin-bottom:12px">Sudah lebih dari seminggu belum backup data. Buka tab <b>Target</b> lalu tekan <b>Download backup</b>.</div>`;
+}
+document.addEventListener("change",e=>{if(e.target.id==="bkFile"&&e.target.files[0])restoreBackup(e.target.files[0])});
+
+/* ---------- target & berat badan ---------- */
+/* profil pribadi: tidak ditulis di kode, disimpan di data pribadi yang tersinkron */
+let profile=null;
+const CONDS=[["perut","Perut berlemak"],["lengan","Lengan kecil"],["kaki","Kaki kecil"],["pipi","Pipi tembem"]];
+function goalOf(P){const fat=(P.conds||[]).includes("perut")||(P.weight/((P.height/100)**2))>=25;return fat?{lo:Math.round(P.weight-5),hi:Math.round(P.weight-3),fat}:{lo:Math.round(P.weight),hi:Math.round(P.weight+3),fat}}
+function profileForm(P){
+  P=P||{};const today=dateKey();
+  return `<section class="${P.age?"":"safe-card"}"><h2>${P.age?"Ubah profil":"Isi profil kamu"}</h2><p class="hint">Disimpan sebagai data pribadi: di perangkat ini dan di Gist privat GitHub-mu kalau sinkron aktif. Tidak tertulis di kode, jadi tidak terlihat oleh orang lain yang membuka link ini.</p>
+  <form id="pForm" style="margin-top:8px;display:flex;flex-direction:column;gap:10px">
+  <div class="row"><label class="kgbox"><span>Umur</span><input id="pAge" inputmode="numeric" value="${esc(P.age||"")}" aria-label="Umur dalam tahun"><span>th</span></label>
+  <label class="kgbox"><span>Tinggi</span><input id="pHeight" inputmode="decimal" value="${esc(P.height||"")}" aria-label="Tinggi dalam cm"><span>cm</span></label>
+  <label class="kgbox"><span>Berat awal</span><input id="pWeight" inputmode="decimal" value="${esc(P.weight||"")}" aria-label="Berat awal dalam kg"><span>kg</span></label></div>
+  <label class="kgbox" style="align-self:flex-start"><span>Mulai</span><input id="pStart" type="date" value="${esc(P.start||today)}" style="width:auto;font-size:16px" aria-label="Tanggal mulai program"></label>
+  <div><span class="hint">Kondisi awal (boleh lebih dari satu)</span><div class="row" style="margin-top:6px">${CONDS.map(c=>`<label class="kgbox" style="cursor:pointer"><input type="checkbox" class="pCond" value="${c[0]}" ${(P.conds||[]).includes(c[0])?"checked":""} style="width:auto"> <span style="color:var(--ink)">${c[1]}</span></label>`).join("")}</div></div>
+  <div class="row"><button class="ghost" type="submit" style="padding:10px 14px">Simpan profil</button>${P.age?`<button class="ghost" type="button" id="pCancel" style="padding:10px 14px">Batal</button>`:""}</div></form></section>`;
+}
+let editingProfile=false;
+document.addEventListener("submit",async e=>{
+  if(e.target.id!=="pForm")return;e.preventDefault();
+  const n=id=>parseFloat(($(id).value||"").replace(",","."));
+  const P={age:Math.round(n("#pAge")),height:n("#pHeight"),weight:n("#pWeight"),start:$("#pStart").value||dateKey(),conds:[...document.querySelectorAll(".pCond:checked")].map(x=>x.value),u:Date.now()};
+  if(!(P.age>=10&&P.age<=100)||!(P.height>=120&&P.height<=230)||!(P.weight>=30&&P.weight<=250)){toast("Cek lagi umur, tinggi, dan berat.");return}
+  try{if(mode==="db"&&col)await col.doc("profile").set(P);else lsSet("gymlog-profile",P);profile=P;editingProfile=false;toast("Profil tersimpan");render()}catch(_){toast("Gagal menyimpan profil. Coba lagi.")}
+});
+let weights=[];
+function fmtDate(d){return new Date(d+"T12:00:00").toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}
+function addMonths(d,m){const x=new Date(d+"T12:00:00");x.setMonth(x.getMonth()+m);return x.toLocaleDateString("id-ID",{month:"long",year:"numeric"})}
+function weightChart(){
+  const pts=[...weights].sort((a,b)=>a.date<b.date?-1:1);
+  if(!pts.length)return `<p class="hint">Grafik muncul setelah kamu mencatat berat pertama.</p>`;
+  const W=560,H=200,L=40,R=16,T=14,B=28;
+  const G=profile?goalOf(profile):null;
+  let lo=Math.min(G?G.lo-1:Infinity,...pts.map(p=>p.kg)),hi=Math.max(profile?profile.weight+1:-Infinity,...pts.map(p=>p.kg));lo=Math.floor(lo);hi=Math.ceil(hi);if(hi-lo<2){hi+=1;lo-=1}
+  const n=Math.max(pts.length-1,1),x=i=>L+(W-L-R)*(pts.length===1?.5:i/n),y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  let g="";for(let v=lo;v<=hi;v+=1){if((v-lo)%2)continue;g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="12" fill="var(--muted)">${v}</text>`}
+  const band=!G?"":`<rect x="${L}" y="${y(G.hi)}" width="${W-L-R}" height="${y(G.lo)-y(G.hi)}" fill="var(--good)" opacity=".14"/><text x="${W-R-4}" y="${y(G.hi)+14}" text-anchor="end" font-size="12" fill="var(--good)">target ${G.lo}–${G.hi} kg</text>`;
+  const line=pts.map((p,i)=>`${x(i)},${y(p.kg)}`).join(" "),last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafik berat badan">${g}${band}<polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>${pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.kg)}" r="${i===pts.length-1?5:3}" fill="var(--accent)"/>`).join("")}
+  <text x="${L}" y="${H-8}" font-size="12" fill="var(--muted)">${fmtDate(pts[0].date)}</text><text x="${W-R}" y="${H-8}" font-size="12" text-anchor="end" fill="var(--muted)">${fmtDate(last.date)} · ${last.kg} kg</text></svg>`;
+}
+function renderTarget(){
+  const P=profile;
+  const sorted=[...weights].sort((a,b)=>a.date<b.date?1:-1),cur=sorted[0];
+  let top;
+  if(!P||editingProfile){top=`<div class="hero"><div><div class="label">Rekomposisi badan · bakar lemak, bangun otot</div><div class="big">Target</div></div></div><div class="rules">${profileForm(P)}`}
+  else{
+    const G=goalOf(P),bmi=(P.weight/((P.height/100)**2)).toFixed(1).replace(".",","),diff=cur?(cur.kg-P.weight):0,c=P.conds||[];
+    const fmt=v=>String(v).replace(".",",");
+    const parts=CONDS.filter(x=>c.includes(x[0])).map(x=>x[1].toLowerCase());
+    const desc=parts.length?`Kondisi awal: ${parts.join(", ")}. `:"";
+    const recomp=G.fat?`${c.includes("lengan")||c.includes("kaki")?"Ini pola <b>skinny fat</b>: berat badan sebenarnya sudah cukup, tapi ototnya sedikit dan lemaknya menumpuk. ":""}Jadi targetnya bukan menaikkan berat, melainkan <b>mengganti lemak dengan otot</b>.`:"Targetnya <b>menambah otot</b> dengan berat naik pelan-pelan.";
+    top=`<div class="hero"><div><div class="label">Rekomposisi badan · bakar lemak, bangun otot</div><div class="big">${G.lo}–${G.hi} kg</div><div class="hint">Target 6 bulan${G.fat?", dengan perut lebih rata dan otot lebih berisi":""}</div></div></div>
+  <div class="chips" style="margin-top:12px"><span>${P.age} tahun</span><span>${fmt(P.height)} cm</span><span>Awal ${fmt(P.weight)} kg</span><span>BMI ${bmi}</span>${cur?`<span>Sekarang ${fmt(cur.kg)} kg (${diff>0?"+":""}${diff.toFixed(1).replace(".",",")})</span>`:""}<button type="button" class="ghost" id="pEdit" style="padding:2px 10px;font-size:12px">Ubah profil</button></div>
+  <div class="rules">
+  <section><h2>Kondisi awal</h2><p>${desc}${recomp}</p></section>`;
+  }
+  $("#view").innerHTML=`${top}
+  <section><h2>Strategi</h2><ul>
+  <li><b>Makan:</b> sekitar 2.000 kkal per hari (defisit ringan) dengan protein minimal 100 g. Menu di tab Harian sudah disesuaikan.</li>
+  <li><b>Latihan beban:</b> 5 hari sesuai program. Kaki dilatih 2 kali seminggu dan perut 3 kali supaya lengan dan kaki lebih berisi.</li>
+  <li><b>Gerak harian:</b> targetkan 8.000 langkah per hari di luar gym, misalnya jalan kaki ke warteg atau saat istirahat kerja.</li>
+  <li><b>Tidur:</b> 7–9 jam. Kurang tidur membuat lapar dan lemak perut susah turun.</li>
+  <li><b>Wajah:</b> lemak tidak bisa dibakar hanya di pipi. Pipi ikut tirus saat lemak badan turun, dibantu mengurangi garam dan minuman manis.</li></ul></section>
+  <section><h2>Perkiraan timeline</h2><table class="shop tl">
+  <tr><td><b>Bulan 1</b><br><small class="hint">${P?addMonths(P.start,1):"bulan ke-1"}</small></td><td>${P?"±"+Math.round(P.weight-(goalOf(P).fat?1:-0.5))+" kg":"—"}<br><small class="hint">Teknik dan kekuatan naik</small></td></tr>
+  <tr><td><b>Bulan 3</b><br><small class="hint">${P?addMonths(P.start,3):"bulan ke-3"}</small></td><td>${P?(goalOf(P).fat?"±"+Math.round(P.weight-3)+"–"+Math.round(P.weight-2)+" kg":"±"+Math.round(P.weight+1)+" kg"):"—"}<br><small class="hint">Lingkar perut mulai turun, wajah mulai tirus</small></td></tr>
+  <tr><td><b>Bulan 6</b><br><small class="hint">${P?addMonths(P.start,6):"bulan ke-6"}</small></td><td>${P?goalOf(P).lo+"–"+goalOf(P).hi+" kg":"—"}<br><small class="hint">Perut lebih rata, otot lengan dan kaki lebih berisi</small></td></tr>
+  <tr><td><b>Bulan 6–12</b><br><small class="hint">${P?"sampai "+addMonths(P.start,12):"lanjutan"}</small></td><td>Naik pelan<br><small class="hint">Fase tambah otot: kalori dinaikkan ke ±2.400</small></td></tr></table>
+  <p class="hint">Perkiraan untuk latihan dan makan yang konsisten. Hasil tiap orang bisa lebih cepat atau lebih lambat. Kalau berat turun lebih dari 1 kg per minggu, tambah sedikit porsi makan supaya otot tidak ikut hilang.</p></section>
+  ${progressSummary()}<section><h2>Catat progres mingguan</h2><p class="hint">Setiap Senin pagi setelah bangun tidur dan buang air, sebelum makan. Perut diukur sejajar pusar, lengan di bagian paling besar lengan atas kanan (rileks), paha di bagian paling besar paha kanan. Pakai meteran jahit.</p>
+  <form id="wForm" class="row" style="margin-top:8px">
+  <label class="kgbox"><span>Berat</span><input id="wKg" inputmode="decimal" placeholder="${cur?cur.kg:(P?P.weight:"—")}" aria-label="Berat badan dalam kg"><span>kg</span></label>
+  <label class="kgbox"><span>Perut</span><input id="wWaist" inputmode="decimal" placeholder="—" aria-label="Lingkar perut dalam cm"><span>cm</span></label>
+  <label class="kgbox"><span>Lengan</span><input id="wArm" inputmode="decimal" placeholder="—" aria-label="Lingkar lengan dalam cm"><span>cm</span></label>
+  <label class="kgbox"><span>Paha</span><input id="wThigh" inputmode="decimal" placeholder="—" aria-label="Lingkar paha dalam cm"><span>cm</span></label>
+  <button class="ghost" type="submit" style="padding:10px 14px">Simpan</button></form>
+  <div class="chart" style="margin-top:12px">${weightChart()}</div>
+  ${sorted.length?`<table class="shop" style="margin-top:8px">${sorted.slice(0,8).map(w=>`<tr><td>${fmtDate(w.date)}</td><td>${String(w.kg).replace(".",",")} kg${w.waist?` · perut ${String(w.waist).replace(".",",")}`:""}${w.arm?` · lengan ${String(w.arm).replace(".",",")}`:""}${w.thigh?` · paha ${String(w.thigh).replace(".",",")}`:""}</td></tr>`).join("")}</table>`:""}</section>${syncSection()}${photoSection()}${backupSection()}</div>`;
+}
+document.addEventListener("submit",async e=>{
+  if(e.target.id!=="wForm")return;e.preventDefault();
+  const rd=id=>parseFloat(($(id).value||"").replace(",",".")),kg=rd("#wKg"),waist=rd("#wWaist"),arm=rd("#wArm"),thigh=rd("#wThigh");
+  if(!(kg>30&&kg<200)){toast("Isi berat dalam kg, misalnya 65,5");return}
+  const entry={kind:"weight",date:dateKey(),kg:Math.round(kg*10)/10,u:Date.now()};if(waist>40&&waist<200)entry.waist=Math.round(waist*10)/10;if(arm>15&&arm<70)entry.arm=Math.round(arm*10)/10;if(thigh>25&&thigh<100)entry.thigh=Math.round(thigh*10)/10;
+  try{
+    if(mode==="db"&&col){await col.doc("w-"+entry.date).set(entry)}
+    else{weights=weights.filter(w=>w.date!==entry.date).concat(entry);lsSet("gymlog-weights",weights);render()}
+    toast("Berat "+String(entry.kg).replace(".",",")+" kg tersimpan");
+  }catch(_){toast("Gagal menyimpan. Coba lagi.")}
+});
+function useLocal(){setTimeout(()=>scheduleSync(100),0);try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist().catch(()=>{})}catch(_){}mode="local";sessions=lsGet("gymlog-sessions")||[];weights=lsGet("gymlog-weights")||[];profile=lsGet("gymlog-profile");habitDone=lsGet("gymlog-habits-"+dateKey())||[];photos=lsGet("gymlog-photos")||[];mealDone=lsGet("gymlog-meals-"+dateKey())||[];draft=null;render()}
+
+async function init(){
+  const h=(location.hash||"").slice(1);if(["hari","makan","riwayat","target","program"].includes(h))tab=h;
+  try{render()}catch(err){console.error(err)}
+  if(!window.claude||!window.claude.use){useLocal();return}
+  /* kalau sinkron akun tidak menjawab dalam 6 detik, pakai penyimpanan browser supaya aplikasi tetap jalan */
+  const giveUp=setTimeout(()=>{if(mode==="loading"){useLocal();toast("Sinkron akun lambat. Data disimpan di browser ini dulu.")}},6000);
+  const within=(pr,ms)=>Promise.race([pr,new Promise(r=>setTimeout(()=>r(null),ms))]);
+  try{
+    const [db,user]=await within(Promise.all([claude.use("db"),claude.use("user")]),5000)||[null,null];
+    const uid=user?await within(user.id(),3000):null;
+    if(!db||!uid){clearTimeout(giveUp);if(mode==="loading")useLocal();return}
+    col=db.collection("data/users/"+uid);
+    let first=true;
+    col.onSnapshot(snap=>{
+      sessions=snap.docs.filter(d=>d.exists).map(d=>({id:d.id,...d.data()})).filter(s=>s.ts&&s.workout);
+      const md=snap.docs.find(d=>d.exists&&d.id==="m-"+dateKey());
+      mealDone=md&&Array.isArray(md.data().done)?[...md.data().done]:[];
+      weights=snap.docs.filter(d=>d.exists&&d.id.startsWith("w-")).map(d=>d.data()).filter(w=>w.kg&&w.date);
+      const hd=snap.docs.find(d=>d.exists&&d.id==="h-"+dateKey());habitDone=hd&&Array.isArray(hd.data().done)?[...hd.data().done]:[];
+      const pf=snap.docs.find(d=>d.exists&&d.id==="profile");profile=pf?pf.data():null;
+      const pd=snap.docs.find(d=>d.exists&&d.id==="photos");photos=pd&&Array.isArray(pd.data().dates)?[...pd.data().dates]:[];
+      mode="db";clearTimeout(giveUp);
+      if(first){first=false;const keep=loadDraft();if(!keep||!Object.values(keep.sets).flat().some(x=>x.kg||x.reps))draft=null}
+      const a=document.activeElement;if(tab==="hari"&&a&&a.dataset&&a.dataset.ex){$("#sync").textContent="Tersimpan otomatis di akunmu";return}
+      render();
+    },()=>{clearTimeout(giveUp);useLocal();toast("Sinkron terputus. Data disimpan di browser ini.")});
+  }catch(_){clearTimeout(giveUp);if(mode!=="db")useLocal()}
+}
+init();
+$("#modal").addEventListener("click",e=>{if(e.target.id==="modal")hideDemo()});
+requestAnimationFrame(animLoop);
+</script>
+
+</body>
+</html>
