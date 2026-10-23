@@ -581,6 +581,7 @@ function renderToday(){
     <li><b>Pelajari gerakan</b> di tab Program: ketuk nama gerakan untuk melihat animasi dan video contohnya, terutama squat, Romanian deadlift, dan incline press.</li>
     <li><b>Cek ke dokter dulu</b> kalau punya keluhan di kaki, sendi, atau jantung, sebelum mulai latihan berat.</li>
     <li><b>Sehari sebelum mulai:</b> ambil foto awal, lalu catat berat dan ukuran pertama di tab Target.</li></ul></section>
+    <section class="safe-card"><h2>Mulai lebih cepat?</h2><p class="hint">Kalau kamu sudah ke gym hari ini, ketuk tombol ini. Tanggal mulai di profil berubah jadi hari ini dan latihan hari ini langsung muncul.</p><button class="primary" type="button" id="startToday" style="margin-top:10px">Mulai hari ini</button></section>
     <section><h2>Minggu pertama nanti</h2><p>Pakai beban ringan dan fokus teknik. Minta staf gym mengecek squat dan Romanian deadlift di hari Leg day.</p></section></div>`;
     return;
   }
@@ -596,6 +597,7 @@ function renderToday(){
   const w=draft.workout;
   let h=backupBanner()+`<div class="hero"><div><div class="label">${esc(todayStr())}</div><div class="big">${esc(WL[w]||w)}</div>${profile&&profile.start&&profile.start<=dateKey()?`<div class="label" style="margin-top:4px">Minggu ke-${Math.floor((new Date(dateKey()+"T12:00:00")-new Date(profile.start+"T12:00:00"))/864e5/7)+1}</div>`:""}<div class="hint">${esc(WSUB[w]||"")}</div></div></div>
   ${weekStrip}`;
+  if(profile&&profile.start&&profile.start<=dateKey()&&(new Date(dateKey()+"T12:00:00")-new Date(profile.start+"T12:00:00"))/864e5<7)h+=`<div class="notice safe-card"><b>Minggu pertama:</b> pakai beban ringan dan fokus teknik. Kalau sudah capek, cukup 2 set per gerakan. Yang penting badan kenal dulu gerakannya.</div>`;
   h+=`<div class="notice">Ketuk gambar untuk lihat cara gerakan. Isi beban kalau mau dicatat, lalu ketuk nomor set setiap kali satu set selesai.</div>`;
   if(PROGRAM[w].some(e=>e.lower))h+=`<div class="notice safe-card"><b>Keamanan kaki hari ini</b><br>Pakai stocking kompresi saat latihan kalau punya. Berhenti dan periksa ke dokter hari itu juga kalau satu betis tiba-tiba bengkak, nyeri, terasa panas, atau kemerahan.</div>`;
   h+=`<div class="list">`+prepCard("warm",w);
@@ -742,6 +744,7 @@ document.addEventListener("click",e=>{
   if(t.id==="syncNowBtn"){syncNow().then(()=>{toast(SYNC.err||"Sudah tersinkron");render()});return}
   if(t.id==="syncCopy"){const tok=syncToken();try{navigator.clipboard.writeText(tok).then(()=>toast("Token disalin"),()=>toast("Gagal menyalin"))}catch(_){toast("Gagal menyalin")}return}
   if(t.id==="syncOff"){try{localStorage.removeItem("gymlog-sync-token")}catch(_){}toast("Sinkron diputus di perangkat ini. Data tetap ada.");render();return}
+  if(t.id==="startToday"){const P={...(profile||{}),start:dateKey(),u:Date.now()};(async()=>{try{if(mode==="db"&&col)await col.doc("profile").set(P);else lsSet("gymlog-profile",P);profile=P;toast("Selamat mulai! Latihan hari ini sudah muncul.");render();window.scrollTo(0,0)}catch(_){toast("Gagal menyimpan. Coba lagi.")}})();return}
   if(t.id==="pEdit"){editingProfile=true;render();return}
   if(t.id==="pCancel"){editingProfile=false;render();return}
   if(t.id==="photoDone"){markPhoto();return}
