@@ -197,6 +197,12 @@ button{font:inherit;color:inherit}
 
 <script>
 const PROGRAM = {
+  FA: [{id:"squat",name:"Back squat",sets:3,min:6,max:10,unit:"rep",lower:true,rest:150},{id:"incline",name:"Incline dumbbell press",sets:3,min:8,max:12,unit:"rep",inc:2,rest:120},{id:"pulldown",name:"Lat pulldown",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"sdbpress",name:"Dumbbell shoulder press",sets:2,min:8,max:12,unit:"rep",inc:2,rest:90},{id:"hammer",name:"Hammer curl",sets:2,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"ccrunch",name:"Cable crunch",sets:3,min:12,max:15,unit:"rep",rest:60}],
+  FB: [{id:"rdl",name:"Romanian deadlift",sets:3,min:8,max:12,unit:"rep",lower:true,rest:120},{id:"chestpress",name:"Chest press machine",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"crow",name:"Seated cable row",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"clateral",name:"Cable lateral raise",sets:3,min:12,max:15,unit:"rep",rest:60},{id:"pushdown",name:"Triceps pushdown",sets:2,min:10,max:15,unit:"rep",rest:60},{id:"lcurl",name:"Lying leg curl",sets:2,min:10,max:15,unit:"rep",lower:true,rest:60}],
+  FC: [{id:"legpress",name:"Leg press",sets:3,min:8,max:12,unit:"rep",lower:true,rest:120},{id:"legext",name:"Leg extension",sets:2,min:12,max:15,unit:"rep",lower:true,rest:60},{id:"csrow",name:"Chest supported row",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"sdbpress",name:"Dumbbell shoulder press",sets:3,min:8,max:12,unit:"rep",inc:2,rest:90},{id:"inccurl",name:"Incline dumbbell curl",sets:2,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"legraise",name:"Lying leg raise",sets:3,min:12,max:15,unit:"rep",bodyweight:true,rest:60},{id:"scalf",name:"Standing calf raise",sets:3,min:12,max:15,unit:"rep",lower:true,rest:60}],
+  FD: [{id:"squat",name:"Back squat",sets:3,min:6,max:10,unit:"rep",lower:true,rest:150},{id:"incline",name:"Incline dumbbell press",sets:3,min:8,max:12,unit:"rep",inc:2,rest:120},{id:"sapd",name:"Single arm lat pulldown",sets:3,min:10,max:12,unit:"rep",rest:60},{id:"clateral",name:"Cable lateral raise",sets:3,min:12,max:15,unit:"rep",rest:60},{id:"ohext",name:"Overhead triceps extension",sets:2,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"plank",name:"Plank",sets:3,min:45,max:45,unit:"detik",bodyweight:true,rest:60}],
+  FE: [{id:"legpress",name:"Leg press",sets:3,min:8,max:12,unit:"rep",lower:true,rest:120},{id:"chestpress",name:"Chest press machine",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"pulldown",name:"Wide grip lat pulldown",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"revpec",name:"Reverse pec deck",sets:2,min:12,max:15,unit:"rep",rest:60},{id:"curl",name:"Dumbbell curl",sets:2,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"lcurl",name:"Lying leg curl",sets:2,min:10,max:15,unit:"rep",lower:true,rest:60},{id:"scalf",name:"Standing calf raise",sets:3,min:12,max:15,unit:"rep",lower:true,rest:60}],
+  /* program split sebelumnya, dipakai untuk menampilkan riwayat */
   PU: [{id:"incline",name:"Incline dumbbell press",sets:3,min:8,max:12,unit:"rep",inc:2,rest:120},{id:"chestpress",name:"Chest press machine",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"sdbpress",name:"Dumbbell shoulder press",sets:3,min:8,max:12,unit:"rep",inc:2,rest:90},{id:"clateral",name:"Cable lateral raise",sets:4,min:12,max:15,unit:"rep",rest:60},{id:"pushdown",name:"Triceps pushdown",sets:3,min:10,max:15,unit:"rep",rest:60},{id:"ohext",name:"Overhead triceps extension",sets:3,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"ccrunch",name:"Cable crunch",sets:3,min:12,max:15,unit:"rep",rest:60}],
   PL: [{id:"pulldown",name:"Wide grip lat pulldown",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"csrow",name:"Chest supported row",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"crow",name:"Seated cable row",sets:3,min:8,max:12,unit:"rep",rest:90},{id:"revpec",name:"Reverse pec deck",sets:3,min:12,max:15,unit:"rep",rest:60},{id:"curl",name:"Dumbbell curl",sets:3,min:10,max:15,unit:"rep",inc:2,rest:60},{id:"hammer",name:"Hammer curl",sets:3,min:10,max:15,unit:"rep",inc:2,rest:60}],
   LG: [{id:"squat",name:"Back squat",sets:3,min:6,max:10,unit:"rep",lower:true,rest:150},{id:"legpress",name:"Leg press",sets:3,min:8,max:12,unit:"rep",lower:true,rest:120},{id:"rdl",name:"Romanian deadlift",sets:3,min:8,max:12,unit:"rep",lower:true,rest:120},{id:"legext",name:"Leg extension",sets:3,min:12,max:15,unit:"rep",lower:true,rest:60},{id:"lcurl",name:"Lying leg curl",sets:3,min:10,max:15,unit:"rep",lower:true,rest:60},{id:"scalf",name:"Standing calf raise",sets:4,min:12,max:15,unit:"rep",lower:true,rest:60},{id:"legraise",name:"Lying leg raise",sets:3,min:12,max:15,unit:"rep",bodyweight:true,rest:60}],
@@ -212,10 +218,10 @@ const PROGRAM = {
   A: [{id:"squat",name:"Squat",sets:3,min:8,max:10,unit:"rep",lower:true,rest:120},{id:"bench",name:"Bench press",sets:3,min:8,max:10,unit:"rep",rest:120},{id:"row",name:"Barbell row",sets:3,min:8,max:10,unit:"rep",rest:120},{id:"dbpress",name:"Dumbbell shoulder press",sets:2,min:10,max:12,unit:"rep",rest:90},{id:"curl",name:"Bicep curl",sets:2,min:10,max:12,unit:"rep",rest:60},{id:"plank",name:"Plank",sets:3,min:30,max:45,unit:"detik",bodyweight:true,rest:60}],
   B: [{id:"rdl",name:"Romanian deadlift",sets:3,min:8,max:10,unit:"rep",lower:true,rest:120},{id:"incline",name:"Incline dumbbell press",sets:3,min:8,max:10,unit:"rep",rest:120},{id:"pulldown",name:"Lat pulldown",sets:3,min:10,max:12,unit:"rep",rest:90},{id:"legpress",name:"Leg press",sets:3,min:10,max:12,unit:"rep",lower:true,rest:90},{id:"lateral",name:"Lateral raise",sets:3,min:12,max:15,unit:"rep",rest:60},{id:"pushdown",name:"Triceps pushdown",sets:2,min:10,max:12,unit:"rep",rest:60}]
 };
-const WEEK = ["PU","PL","LG","VT","AU"];
-const WL = {PU:"Push day",PL:"Pull day",LG:"Leg day",VT:"V-Taper day",AU:"Arms + Legs",UA:"Upper A",LA:"Lower A",R:"Ringan",UB:"Upper B",LB:"Lower B",A:"Full body A",B:"Full body B"};
-const WSUB = {PU:"Dada, bahu, triceps",PL:"Punggung dan biceps",LG:"Kaki, jangan di-skip",VT:"Punggung lebar dan bahu",AU:"Lengan dan kaki",UA:"Dada, punggung, bahu, lengan",LA:"Kaki dan perut",R:"Pemulihan aktif",UB:"Dada, punggung, bahu, lengan",LB:"Kaki dan perut"};
-const WDAY = {1:"PU",2:"PL",3:"LG",5:"VT",6:"AU"};
+const WEEK = ["FA","FB","FC","FD","FE"];
+const WL = {FA:"Full Body A",FB:"Full Body B",FC:"Full Body C",FD:"Full Body D",FE:"Full Body E",PU:"Push day",PL:"Pull day",LG:"Leg day",VT:"V-Taper day",AU:"Arms + Legs",UA:"Upper A",LA:"Lower A",R:"Ringan",UB:"Upper B",LB:"Lower B",A:"Full body A",B:"Full body B"};
+const WSUB = {FA:"Fokus squat, dada, dan punggung lebar",FB:"Fokus Romanian deadlift, dada, dan punggung tebal",FC:"Fokus mesin kaki, bahu, dan perut (lebih ringan)",FD:"Fokus squat, dada atas, dan bahu",FE:"Fokus leg press, punggung, dan lengan",PU:"Dada, bahu, triceps",PL:"Punggung dan biceps",LG:"Kaki, jangan di-skip",VT:"Punggung lebar dan bahu",AU:"Lengan dan kaki",UA:"Dada, punggung, bahu, lengan",LA:"Kaki dan perut",R:"Pemulihan aktif",UB:"Dada, punggung, bahu, lengan",LB:"Kaki dan perut"};
+const WDAY = {1:"FA",2:"FB",3:"FC",5:"FD",6:"FE"};
 /* angka rep pasti untuk program aktif */
 const FIXREP={"6-10":10,"8-12":12,"10-12":12,"10-15":15,"12-15":15};
 WEEK.forEach(k=>PROGRAM[k].forEach(e=>{const r=FIXREP[e.min+"-"+e.max];if(r){e.min=r;e.max=r}}));
@@ -464,8 +470,8 @@ function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTi
 function todayStr(d=new Date()){return d.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long"})}
 
 function sorted(){return [...sessions].sort((a,b)=>b.ts-a.ts)}
-function nextAfter(w){const i=WEEK.indexOf(w);return i<0?"PU":WEEK[(i+1)%WEEK.length]}
-function nextWorkout(){const today=WDAY[new Date().getDay()];if(today)return today;const s=sorted();return s.length?nextAfter(s[0].workout):"PU"}
+function nextAfter(w){const i=WEEK.indexOf(w);return i<0?"FA":WEEK[(i+1)%WEEK.length]}
+function nextWorkout(){const today=WDAY[new Date().getDay()];if(today)return today;const s=sorted();return s.length?nextAfter(s[0].workout):"FA"}
 function lastFor(exId){for(const s of sorted()){const r=s.sets&&s.sets[exId];if(r&&r.some(x=>x.reps))return r}return null}
 
 function newDraft(w){
@@ -558,7 +564,7 @@ function saveHabits(){
   if(mode==="db"&&col){habitChain=habitChain.then(()=>col.doc("h-"+date).set({kind:"habits",date,done})).catch(()=>toast("Gagal menyimpan kebiasaan."))}
   else lsSet("gymlog-habits-"+date,done);
 }
-function prepKind(w){return w==="LG"||w==="LA"||w==="LB"?"leg":w==="AU"?"mix":"upper"}
+function prepKind(w){return w==="LG"||w==="LA"||w==="LB"?"leg":(w==="AU"||WEEK.includes(w))?"mix":"upper"}
 function prepCard(type,w){
   const items=PREP[type][prepKind(w)],done=(draft[type]||[]);
   const title=type==="warm"?"Pemanasan · ±10 menit":"Pendinginan · ±12 menit";
@@ -711,7 +717,7 @@ function renderProgram(){
     ${PROGRAM[k].map(e=>`<tr><td>${DEMO[e.id]?`<button type="button" class="linkbtn" data-demo="${e.id}">${esc(e.name)}</button>`:esc(e.name)}</td><td>${e.sets} × ${rng(e)} ${e.unit}${e.rest?`<br><small class="hint">istirahat ${restTxt(e.rest)}</small>`:""}</td></tr>`).join("")}
     <tr><td colspan="2"><i>Pendinginan ${kind} ±12 menit</i></td></tr></table></section>`};
   $("#view").innerHTML=`<div class="rules">
-  <section><h2>Jadwal mingguan</h2><ul><li>Senin: Push · Selasa: Pull · Rabu: Leg day · Jumat: V-Taper · Sabtu: Arms + Legs.</li><li>Kamis dan Minggu istirahat total.</li><li>Tab Latihan otomatis membuka latihan sesuai hari dan tidak bisa diganti. Kalau bolos, lanjutkan saja jadwal hari berikutnya.</li></ul></section>
+  <section><h2>Jadwal mingguan</h2><ul><li>Senin: Full Body A · Selasa: Full Body B · Rabu: Full Body C · Jumat: Full Body D · Sabtu: Full Body E. Semua sesi melatih seluruh badan.</li><li>Kamis dan Minggu istirahat total.</li><li>Tab Latihan otomatis membuka latihan sesuai hari dan tidak bisa diganti. Kalau bolos, lanjutkan saja jadwal hari berikutnya.</li></ul></section>
   <section><h2>Jadwal harian dan tidur</h2><p class="hint">Untuk gym setelah Subuh. Malam sebelum hari istirahat (Rabu dan Sabtu) boleh tidur jam 22.00, tapi tetap bangun Subuh.</p>${dayPlanTable()}
   <ul style="margin-top:8px"><li>Kamar gelap dan sejuk, HP jauh dari kasur.</li><li>Jangan makan berat 2 jam sebelum tidur.</li><li>Jam bangun sama setiap hari, termasuk hari istirahat. Ini kunci supaya bangun Subuh terasa mudah.</li></ul></section>
   ${[1,2,3,4,5,6,0].map(day).join("")}
@@ -723,7 +729,7 @@ function renderProgram(){
   <li>Target rep adalah angka pasti. Pilih beban yang sanggup kamu angkat sebanyak itu dengan teknik benar.</li>
   <li>Kalau semua set sudah lancar mencapai target rep, naikkan beban di latihan berikutnya: +2,5 kg untuk mesin dan barbel badan atas, +5 kg untuk kaki, +2 kg per tangan untuk dumbbell.</li>
   <li>Dua minggu pertama pakai beban ringan dan fokus teknik.</li>
-  <li>Kaki dilatih 2 kali seminggu (Rabu dan Sabtu) dan perut 3 kali (Senin, Rabu, Jumat).</li>
+  <li>Setiap sesi melatih kaki, dada, punggung, dan bahu atau lengan. Gerakan berat untuk kaki (squat dan Romanian deadlift) diselang-seling supaya tidak dilakukan dua hari berturut-turut. Rabu sengaja lebih ringan.</li>
   <li>Setiap minggu ke-8 adalah minggu ringan (deload): kurangi 1 set di setiap gerakan dan pakai sekitar 70% beban biasa, supaya sendi dan otot pulih.</li>
   <li>Di gerakan kaki, hembuskan napas saat mendorong dan jangan menahan napas. Selesai latihan, angkat kaki ke dinding 5–10 menit.</li>
   <li>Makan dalam surplus kalori dan tidur 7–9 jam. Tanpa itu, otot sulit tumbuh.</li></ul></section></div>`;
@@ -1053,7 +1059,7 @@ function renderTarget(){
   $("#view").innerHTML=`${top}
   <section><h2>Strategi</h2><ul>
   <li><b>Makan:</b> sekitar 2.000 kkal per hari (defisit ringan) dengan protein minimal 100 g. Menu di tab Harian sudah disesuaikan.</li>
-  <li><b>Latihan beban:</b> 5 hari sesuai program. Kaki dilatih 2 kali seminggu dan perut 3 kali supaya lengan dan kaki lebih berisi.</li>
+  <li><b>Latihan beban:</b> 5 hari sesuai program. Full body 5 hari: kaki, dada, punggung, dan lengan dilatih hampir setiap sesi supaya lengan dan kaki lebih berisi.</li>
   <li><b>Gerak harian:</b> targetkan 8.000 langkah per hari di luar gym, misalnya jalan kaki ke warteg atau saat istirahat kerja.</li>
   <li><b>Tidur:</b> 7–9 jam. Kurang tidur membuat lapar dan lemak perut susah turun.</li>
   <li><b>Wajah:</b> lemak tidak bisa dibakar hanya di pipi. Pipi ikut tirus saat lemak badan turun, dibantu mengurangi garam dan minuman manis.</li></ul></section>
